@@ -2092,13 +2092,16 @@ async function firebaseBackend(cfg){
   const learn=d=>{ if (d && d.names && typeof d.names==="object") for (const [k,v] of Object.entries(d.names)) if (typeof v==="string") names[k]=v.slice(0,16); };
   const errOut=e=>{ throw { code: ["permission-denied","not-found","invalid-argument","failed-precondition"].includes(e && e.code) ? "invalid_argument" : (e && e.code)==="gone" ? "gone" : "unavailable", message: e && e.message }; };
   const expiry=()=>firebase.firestore.Timestamp.fromMillis(Date.now()+24*3600e3);
-  const stamp=(path,d)=> path.startsWith("games/") ? {...d, expireAt:expiry()} : d;
-  const wrap=d=>{ const data=d.exists ? d.data() : undefined; if (data){ learn(data); delete data.expireAt; }
+  // Firestore can't hold a list inside a list (the board's piece positions are one), so inner lists are wrapped as {__a:[…]}.
+  const enc=v=> Array.isArray(v) ? v.map(x=>Array.isArray(x) ? {__a:enc(x)} : enc(x)) : v && typeof v==="object" && !(v instanceof firebase.firestore.Timestamp) ? Object.fromEntries(Object.entries(v).map(([k,x])=>[k,enc(x)])) : v;
+  const dec=v=> Array.isArray(v) ? v.map(x=> x && typeof x==="object" && !Array.isArray(x) && Object.keys(x).length===1 && "__a" in x ? dec(x.__a) : dec(x)) : v && typeof v==="object" && !(v instanceof firebase.firestore.Timestamp) ? Object.fromEntries(Object.entries(v).map(([k,x])=>[k,dec(x)])) : v;
+  const stamp=(path,d)=>{ const e=enc(d); return path.startsWith("games/") ? {...e, expireAt:expiry()} : e; };
+  const wrap=d=>{ const data=d.exists ? dec(d.data()) : undefined; if (data){ learn(data); delete data.expireAt; }
     return { exists:d.exists, id:d.id, data:()=>data, metadata:{fromCache:d.metadata.fromCache, hasPendingWrites:d.metadata.hasPendingWrites} }; };
   const doc=path=>{ const r=fs.doc(path); return {
     get: ()=>r.get().then(wrap,errOut),
-    set: d=>r.set(stamp(path,d)).catch(errOut),
-    update: d=>r.update(stamp(path,d)).catch(errOut),
+    set: d=>Promise.resolve().then(()=>r.set(stamp(path,d))).catch(errOut),
+    update: d=>Promise.resolve().then(()=>r.update(stamp(path,d))).catch(errOut),
     acquire: async()=>({acquired:true}),
     onSnapshot: (next,err)=>r.onSnapshot(d=>next(wrap(d)), e=>err && err({code:"unavailable", message:e.message})),
   }; };
@@ -2106,7 +2109,7 @@ async function firebaseBackend(cfg){
     collection: c=>({ where:(f,op,v)=>({ limit:n=>({ get:()=>fs.collection(c).where(f,op,v).limit(n).get().then(q=>({docs:q.docs.map(wrap)}),errOut) }) }) }),
     // read-modify-write in one transaction, so two lobby changes at once can't clash
     txUpdate: (path,f)=>fs.runTransaction(async tx=>{ const r=fs.doc(path), d=await tx.get(r); if (!d.exists) throw {code:"gone"};
-      const data=d.data(); learn(data); delete data.expireAt; const patch=f(data); if (patch) tx.update(r, stamp(path,patch)); }).catch(errOut),
+      const data=dec(d.data()); learn(data); delete data.expireAt; const patch=f(data); if (patch) tx.update(r, stamp(path,patch)); }).catch(errOut),
   };
   const user={ id:async()=>uid, can:async()=>true, isOwner:async()=>false, canEdit:async()=>false,
     me:async()=>({id:uid, name:G.nick||""}),
