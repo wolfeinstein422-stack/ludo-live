@@ -483,6 +483,13 @@ body .die span.on{background:var(--die-pip)}
 .nickrow{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-top:12px}
 .nickrow label{font-weight:700}
 .nickrow .input{max-width:240px;letter-spacing:.02em;text-transform:none;font:600 16px var(--font-body)}
+.resume{margin-top:16px;flex-direction:row;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;border-left:5px solid var(--accent)}
+.resume[hidden]{display:none}
+.resume-info{display:grid;gap:6px;min-width:0}
+.rminis{display:flex;gap:8px;flex-wrap:wrap}
+.rchip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--surface-2);font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px var(--line)}
+.rchip.now{box-shadow:inset 0 0 0 2px var(--pc)}
+.rchip .mini{width:24px;height:24px}
 .mini{width:28px;height:28px;flex:none;display:inline-block}
 .mini svg{width:100%;height:100%;overflow:visible}
 .picker{display:flex;gap:5px;flex-wrap:wrap}
@@ -575,6 +582,7 @@ body .die span.on{background:var(--die-pip)}
       <div>
         <h1>Roll a <span>six</span>.<br>Race home.</h1>
         <p>Classic four-colour Ludo you play in the browser with friends. Start a table, share the code, and everyone's moves show up live.</p>
+        <button class="btn" id="installBtn" type="button" hidden style="margin-top:16px">Install app</button>
       </div>
       <div class="hero-board" aria-hidden="true"><div class="table"><div class="board" id="heroBoard"></div></div></div>
     </div>
@@ -582,6 +590,10 @@ body .die span.on{background:var(--die-pip)}
     <div id="onlineNote" class="note" hidden></div>
     <div class="panel nickrow" id="nickRow" hidden><label for="nick">Your name for online tables</label><input class="input" id="nick" maxlength="16" autocomplete="nickname"></div>
 
+    <div class="card resume" id="resumeCard" hidden>
+      <div class="resume-info"><span class="eyebrow">Saved on this device</span><h2>Continue your last game?</h2><p id="resumeText"></p><div class="rminis" id="resumeMinis"></div></div>
+      <div class="row"><button class="btn primary" id="resumeBtn" type="button">Continue game</button><button class="btn" id="discardBtn" type="button">Start a new one</button></div>
+    </div>
     <div class="cards" style="margin-top:16px">
       <div class="card">
         <span class="eyebrow">Online</span>
@@ -1017,10 +1029,25 @@ function mySeat(){ return G.state ? G.state.seats.findIndex(x=>x.uid && x.uid===
 /* ---------- Persistence ---------- */
 // Only the fields that changed are sent, so two people changing different things never overwrite each other.
 function changedFields(prev,next){ const out={}; for (const k of Object.keys(next)) if (!prev || JSON.stringify(prev[k])!==JSON.stringify(next[k])) out[k]=clone(next[k]); return out; }
+// Pass and play games are saved on this device after every change, so they can be continued later (also offline).
+function saveLocal(s){ try { if (s && s.status==="playing") localStorage.setItem("ludo.save", JSON.stringify({state:s, at:Date.now()})); else localStorage.removeItem("ludo.save"); } catch(e){} }
+function readSave(){ const v=lsGet("ludo.save"); return v && v.state && validState(v.state) && v.state.status==="playing" ? v : null; }
+function ago(t){ const m=Math.round((Date.now()-t)/60000); return m<1 ? "just now" : m<60 ? `${m} min ago` : m<1440 ? `${Math.round(m/60)} h ago` : `${Math.round(m/1440)} day${m>=2880?"s":""} ago`; }
+function renderResume(){
+  const card=$("#resumeCard"), sv=readSave(); card.hidden=!sv; if (!sv) return;
+  const s=sv.state, seats=activeSeats(s);
+  const home=seats.reduce((a,i)=>a+s.tokens[i].filter(p=>p===56).length,0);
+  $("#resumeText").textContent=`${seats.length} players · ${home} of ${seats.length*4} pieces home · ${SETTINGS[settingOf(s)]}, ${SKINS[skinOf(s)]} · saved ${ago(sv.at)}`;
+  const m=$("#resumeMinis"); m.innerHTML="";
+  seats.forEach(i=>{ const chip=document.createElement("span"); chip.className="rchip c-"+COLORS[i]+(i===s.turn?" now":"");
+    chip.append(miniIcon(charOf(s,i),i), document.createTextNode(s.seats[i].kind==="bot" ? NAMES[i]+" bot" : NAMES[i])); m.appendChild(chip); });
+}
+function resumeLocal(){ const sv=readSave(); if (!sv) return renderResume(); G.mode="local"; G.code=null; resetShown(); G.state=sv.state; route(); }
 function commit(ns){
   const prev=G.state;
   ns.rev=(prev && prev.rev || 0)+1;
   G.state=ns; route();
+  if (G.mode==="local") saveLocal(ns);
   if (G.mode==="online"){
     const ref=G.db.doc("games/"+G.code), patch=changedFields(prev,ns);
     writeChain = writeChain.then(()=>ref.update(patch)).catch(e=> e && e.code==="invalid_argument" && !prev ? ref.set(clone(ns)) : Promise.reject(e)).catch(writeFailed);
@@ -1945,7 +1972,7 @@ function goHome(){
   if (G.unsub){ try{G.unsub();}catch(e){} G.unsub=null; }
   clearTimeout(botTimer);
   G.mode=null; G.code=null; G.state=null; resetShown(); leaveRoom();
-  clearHash(); renderTop(); show("home"); loadTables();
+  clearHash(); renderTop(); show("home"); loadTables(); renderResume();
 }
 function startLocal(){
   const seats=[0,1,2,3].map(i=>({kind:$("#local-"+i).value, uid:null, char:localChars[i]}));
@@ -2051,12 +2078,19 @@ function setNickRow(){
 function setOnlineAvailability(){
   const note=$("#onlineNote"), ok=!!(G.db && G.me) && G.canWrite!==false;
   $("#createBtn").disabled=!ok;
+  if (!window.claude && navigator.onLine===false){ note.hidden=false; note.className="note"; note.textContent="You\u2019re offline. Pass and play works as normal; online tables come back when you reconnect."; $("#createBtn").disabled=true; return; }
   if (!G.db || !G.me){ note.hidden=false; note.className="note warn"; note.textContent= window.claude ? "Online tables need you to be signed in to Claude with access to this page. Pass and play works on this device either way." : "Online tables aren\u2019t available right now. Check your connection and reload; Pass and play works on this device either way."; }
   else if (G.canWrite===false){ note.hidden=false; note.className="note warn"; note.textContent="You can watch online tables, but to play you need edit access. Ask the person who shared this page to invite you as an Editor."; }
   else note.hidden=true;
 }
 
 $("#homeBtn").onclick=goHome;
+$("#resumeBtn").onclick=resumeLocal;
+$("#discardBtn").onclick=()=>{ saveLocal(null); renderResume(); const b=$("#localBtn"); b.scrollIntoView({behavior:"smooth",block:"center"}); b.focus({preventScroll:true}); toast("Saved game cleared. Pick players and press Start game."); };
+let installEvt=null;
+addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; $("#installBtn").hidden=false; });
+$("#installBtn").onclick=async()=>{ if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt=null; $("#installBtn").hidden=true; };
+addEventListener("appinstalled",()=>{ $("#installBtn").hidden=true; toast("Ludo Live is installed."); });
 if (matchMedia("(pointer:fine)").matches && !reduceMotion){
   const mat=$("#mat");
   mat.addEventListener("pointermove",e=>{ const r=mat.getBoundingClientRect(), mx=(e.clientX-r.left)/r.width-.5, my=(e.clientY-r.top)/r.height-.5;
@@ -2086,7 +2120,7 @@ async function firebaseBackend(cfg){
   const V="10.12.2", base=`https://www.gstatic.com/firebasejs/${V}/`;
   await loadScript(base+"firebase-app-compat.js");
   await Promise.all([loadScript(base+"firebase-auth-compat.js"), loadScript(base+"firebase-firestore-compat.js")]);
-  const app=firebase.initializeApp(cfg), fs=firebase.firestore(app);
+  const app=firebase.apps.length ? firebase.app() : firebase.initializeApp(cfg), fs=firebase.firestore(app);
   const cred=await firebase.auth(app).signInAnonymously(); const uid=cred.user.uid;
   const names={};                                  // nicknames seen in table data
   const learn=d=>{ if (d && d.names && typeof d.names==="object") for (const [k,v] of Object.entries(d.names)) if (typeof v==="string") names[k]=v.slice(0,16); };
@@ -2131,12 +2165,18 @@ buildLocalCfg(); buildLocalSetting(); initHeroBoard(); initGameBoard(); setFace(
 
 function start(data){
   if (data && data.localState && validState(data.localState)){ G.mode="local"; G.state=data.localState; route(); }
+  renderResume(); initOnline(data);
+}
+let onlineStarting=false;
+function initOnline(data){
+  if (onlineStarting || G.db) return;
   const use = window.claude && window.claude.use;
   const backend = use ? Promise.all([use("db"), use("user"), use("room")])
-    : window.LUDO_FIREBASE ? firebaseBackend(window.LUDO_FIREBASE) : null;
+    : window.LUDO_FIREBASE && navigator.onLine!==false ? firebaseBackend(window.LUDO_FIREBASE) : null;
   setNickRow();
-  if (!backend){ loadTables(); return; }
-  backend.then(async ([db,user,room])=>{
+  if (!backend){ setOnlineAvailability(); loadTables(); return; }
+  onlineStarting=true;
+  backend.then(async ([db,user,room])=>{ onlineStarting=false;
     G.db=db; G.user=user; G.roomApi=room;
     if (G.mode==="online" && G.code) joinRoom(G.code);
     if (user){ try { G.me=await user.id(); } catch(e){} try { G.canWrite=await user.can("data.write"); } catch(e){} }
@@ -2144,8 +2184,10 @@ function start(data){
     const h=(location.hash||"").replace("#","").toUpperCase();
     const want = (data && data.code) || (/^[A-Z0-9]{5}$/.test(h) ? h : null);
     if (G.mode!=="local" && want && db) openOnline(want); else loadTables();
-  }).catch(()=>{ setOnlineAvailability(); loadTables(); setNickRow(); });
+  }).catch(()=>{ onlineStarting=false; setOnlineAvailability(); loadTables(); setNickRow(); });
 }
+addEventListener("online",()=>{ setOnlineAvailability(); if (!window.claude && !G.db) initOnline({}); });
+addEventListener("offline",()=>setOnlineAvailability());
 const hot = window.claude && window.claude.hot;
 if (hot && typeof hot.snapshot==="function"){ try { hot.snapshot(()=>({ code:G.mode==="online"?G.code:null, localState:G.mode==="local"?G.state:null })); } catch(e){} }
 if (hot && typeof hot.ready==="function") hot.ready(start); else start((hot && hot.data) || {});

@@ -16,9 +16,15 @@ page = f"""<!doctype html>
 <meta name="description" content="Online Ludo for 2 to 4 players: create a table, share the code, and play live with friends or bots.">
 <meta name="theme-color" content="#23284A">
 <link rel="icon" href="{icon}">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Ludo Live">
 <style>:root{{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}}body{{margin:0;font:14px system-ui,-apple-system,"Segoe UI",sans-serif}}img{{max-width:100%}}[hidden]{{display:none!important}}</style>
 {head_part.strip()}
 <script src="config.js"></script>
+<script>if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) navigator.serviceWorker.register("sw.js").catch(function(){{}});</script>
 </head>
 <body>
 {body_part.strip()}
@@ -26,4 +32,7 @@ page = f"""<!doctype html>
 </html>
 """
 pathlib.Path("index.html").write_text(page)
+import hashlib
+stamp = hashlib.sha1((page + pathlib.Path("config.js").read_text() if pathlib.Path("config.js").exists() else page).encode()).hexdigest()[:10]
+pathlib.Path("sw.js").write_text(pathlib.Path("sw.template.js").read_text().replace("__BUILD__", stamp))
 print("index.html written,", len(page), "bytes")
