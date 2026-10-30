@@ -241,7 +241,6 @@ details.rules li{margin-bottom:4px;break-inside:avoid}
 @keyframes enter-cat{0%{transform:none}30%{transform:scale(1.35,.72)}45%{transform:scale(1.35,.72)}70%{transform:translateY(-38%) rotate(-10deg)}88%{transform:scale(1.1,.9)}100%{transform:none}}
 @keyframes enter-owl{0%{transform:none}30%{transform:translateY(-45%) rotate(-25deg) scale(1.1)}65%{transform:translateY(-20%) rotate(15deg)}85%{transform:scale(1.06,.94)}100%{transform:none}}
 @keyframes enter-penguin{0%{transform:none}20%{transform:rotate(-85deg) translateY(-10%)}80%{transform:rotate(-85deg) translateY(-10%)}92%{transform:translateY(-15%)}100%{transform:none}}
-@keyframes shiverx{25%{translate:-1.3px 0}}
 @keyframes fright{0%,65%,100%{transform:none}75%{transform:translateY(-8px) scale(.94,1.08)}85%{transform:scale(1.06,.94)}}
 @keyframes drip{0%{transform:translate(0,0);opacity:0}20%{opacity:1}100%{transform:translate(2px,10px);opacity:0}}
 @keyframes knock{0%{transform:translate(-50%,-50%) rotate(0) scale(1)}45%{transform:translate(-50%,-110%) rotate(320deg) scale(1.2)}100%{transform:translate(-50%,-50%) rotate(720deg) scale(var(--s,1))}}
@@ -277,7 +276,6 @@ details.rules li{margin-bottom:4px;break-inside:avoid}
 .cell.lit{box-shadow:inset 0 0 0 .5px var(--grid),inset 0 0 14px 3px rgba(255,214,90,.65)}
 .cell.lane{transition:filter .35s,box-shadow .35s}
 .cell.lane-lit{filter:brightness(1.12) saturate(1.1);box-shadow:inset 0 0 0 .5px var(--grid),inset 0 0 0 2px rgba(255,255,255,.55),inset 0 0 7px rgba(255,255,255,.45)}
-.cell.press{animation:press .32s ease-out}
 .print{position:absolute;width:2.6%;aspect-ratio:1;animation:printfade 1.9s ease-out forwards}
 .print svg{width:100%;height:100%;overflow:visible}
 /* visitors */
@@ -290,7 +288,6 @@ details.rules li{margin-bottom:4px;break-inside:avoid}
 .amb-butterfly.resting .wing{animation-duration:1.4s}
 /* tense finish */
 .board.tense::after{content:"";position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 50% 50%,rgba(255,200,80,0) 38%,rgba(255,170,40,.34) 100%);animation:tense 2.4s ease-in-out infinite}
-.table.tense{box-shadow:0 0 0 3px #E8B54A,0 0 44px 4px rgba(255,190,60,.45),0 18px 40px -18px rgba(10,12,30,.55)}
 /* effects */
 .fx{position:absolute;transform:translate(-50%,-50%);pointer-events:none}
 .fx.ripple{width:30%;aspect-ratio:1}
@@ -318,7 +315,6 @@ details.rules li{margin-bottom:4px;break-inside:avoid}
 @keyframes turnglow{50%{box-shadow:0 0 0 3px rgba(255,255,255,.55),0 0 10px 2px rgba(255,255,255,.25)}}
 @keyframes twinkle{0%,100%{transform:scale(1);text-shadow:none}50%{transform:scale(1.15);color:#E2B94E;text-shadow:0 0 8px rgba(255,210,90,.9)}}
 @keyframes litpulse{0%,100%{transform:scale(1.1);text-shadow:0 0 8px #FFD34D}50%{transform:scale(1.3);text-shadow:0 0 16px #FFD34D,0 0 3px #fff}}
-@keyframes press{0%{box-shadow:inset 0 0 0 .5px var(--grid),inset 0 4px 9px rgba(0,0,0,.38)}100%{box-shadow:inset 0 0 0 .5px var(--grid)}}
 @keyframes printfade{0%{opacity:0}12%{opacity:1}100%{opacity:0}}
 @keyframes bfly{to{transform:scaleX(.2)}}
 @keyframes tense{50%{opacity:.55}}
@@ -365,7 +361,7 @@ details.rules li{margin-bottom:4px;break-inside:avoid}
 @keyframes bg-dapple{to{background-position:2% 2%,-2% 1%,1% -2%,-1% -1%}}
 @keyframes bg-snow{to{background-position:30px 340px,-20px 340px,10px 340px,-30px 340px,20px 340px,0 340px,-10px 340px}}
 /* surfaces float over the scene */
-body:not([data-setting="plain"]):not([data-setting=""]) .panel,body:not([data-setting="plain"]):not([data-setting=""]) .seats li{background:color-mix(in srgb,var(--surface) 90%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+body:not([data-setting="plain"]):not([data-setting=""]) .panel,body:not([data-setting="plain"]):not([data-setting=""]) .seats li{background:color-mix(in srgb,var(--surface) 93%,transparent)}
 body:not([data-setting="plain"]):not([data-setting=""]) .brand{background:var(--surface);padding:6px 12px 6px 6px;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,.15)}
 /* the table the board sits on */
 /* the light falling on the board */
@@ -536,6 +532,9 @@ body .die span.on{background:var(--die-pip)}
 @keyframes m-shrug{0%,100%{transform:none}40%,60%{transform:translateY(-3px) rotate(-3deg)}}
 @keyframes m-stomp{50%{transform:translateY(2px) rotate(1deg)}}
 @keyframes m-steam{0%{opacity:0;transform:translateY(4px)}40%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
+/* Reduce effects: the scenery holds still; pieces, dice and mascots keep all their motion */
+body.reduce-fx #setting,body.reduce-fx #setting *,body.reduce-fx .scene *,body.reduce-fx .cell::after,body.reduce-fx .yard::after,body.reduce-fx .board::after,body.reduce-fx #boardLight::after{animation:none!important}
+body.can-roll .mat{cursor:pointer}
 .mini{width:28px;height:28px;flex:none;display:inline-block}
 .mini svg{width:100%;height:100%;overflow:visible}
 .picker{display:flex;gap:5px;flex-wrap:wrap}
@@ -562,7 +561,6 @@ body .die span.on{background:var(--die-pip)}
 .roll3d{position:absolute;inset:clamp(8px,2vw,16px);pointer-events:none;perspective:1100px;z-index:5}
 .r-pos{position:absolute;left:50%;top:50%;width:12%;aspect-ratio:1;transform:translate(-50%,-50%);transform-style:preserve-3d}
 .r-shadow{position:absolute;inset:4%;border-radius:18%;background:rgba(5,6,15,.6);filter:blur(5px);transform:translate(10%,14%)}
-.r-hop{position:absolute;inset:0;transform-style:preserve-3d}
 .cube{position:absolute;inset:0;transform-style:preserve-3d}
 .cube .f{position:absolute;inset:0;border-radius:11%;background:linear-gradient(145deg,#FFFFFF,#E9E7E1);display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);padding:13%;
   box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--pc) 70%,#fff),inset 0 -3px 6px rgba(0,0,0,.14);backface-visibility:hidden}
@@ -706,7 +704,7 @@ body .die span.on{background:var(--die-pip)}
       <div class="mat" id="mat"><div class="table" id="tableWrap">
         <div class="board" id="board"></div>
         <div class="roll3d" id="roll3d" hidden aria-hidden="true">
-          <div class="r-pos" id="rPos"><div class="r-shadow" id="rShadow"></div><div class="r-hop" id="rHop"><div class="cube" id="cube"></div></div></div>
+          <div class="r-pos" id="rPos"><div class="r-shadow" id="rShadow"></div><div class="cube" id="cube"></div></div>
         </div>
         <div id="boardLight"></div>
         <canvas class="fw" id="fireworks" hidden></canvas>
@@ -778,7 +776,7 @@ const isActive = (s,i) => s.seats[i].kind !== "off";
 const activeSeats = s => [0,1,2,3].filter(i => isActive(s,i));
 function canMove(s,seat,t,d){ const p=s.tokens[seat][t]; if (p===56) return false; if (p<0) return d===6; return p+d<=56; }
 function movable(s,seat,d){ return [0,1,2,3].filter(t => canMove(s,seat,t,d)); }
-function addLog(s,e){ s.log = [e, ...(s.log||[])].slice(0,14); }
+function addLog(s,e){ s.log = [e, ...(s.log||[])].slice(0,8); }
 function nextTurn(s){
   let i = s.turn;
   for (let k=0;k<4;k++){ i=(i+1)%4; if (isActive(s,i) && !s.winners.includes(i)) { s.turn=i; break; } }
@@ -1039,7 +1037,7 @@ function tap(pitch,vol=.08){
 }
 
 /* ---------- App state ---------- */
-const G = { mode:null, code:null, state:null, unsub:null, db:null, user:null, me:null, canWrite:null, names:{}, rolling:false, justRolled:false, lastRollId:null };
+const G = { mode:null, code:null, state:null, unsub:null, db:null, user:null, me:null, canWrite:null, names:{}, lastRollId:null };
 let writeChain = Promise.resolve();
 const shown = {}, hopping = {}, animId = {};
 let botRev=-1, autoRev=-1, botTimer=null;
@@ -1568,7 +1566,7 @@ let ambBusy=false;
 function edgePoint(){ const t=Math.random()*15, e=Math.floor(Math.random()*4); return [[t,-.8],[15.8,t],[t,15.8],[-.8,t]][e]; }
 function spawnAmbient(){
   setTimeout(spawnAmbient, 16000+Math.random()*22000);
-  if (ambBusy || reduceMotion || document.hidden || $("#game").hidden || !G.state || G.state.status!=="playing") return;
+  if (ambBusy || reduceMotion || document.body.classList.contains("reduce-fx") || document.hidden || $("#game").hidden || !G.state || G.state.status!=="playing") return;
   const st=document.body.dataset.setting||"plain", tod=document.body.dataset.tod;
   const POOL={plain:["ladybug","leaf","butterfly"], picnic: tod==="night"?["firefly","firefly","leaf"]:["ladybug","leaf","butterfly"], night: tod==="day"?["butterfly","leaf"]:["firefly","firefly","leaf"], living:["paw","paw","ladybug"], space:["drone"], arctic:["snowflake"]};
   const pool=POOL[st]||POOL.plain, kind=pool[Math.floor(Math.random()*pool.length)];
@@ -1702,7 +1700,7 @@ const DAY_ROLLS=36;
 function setShadow(x){ document.body.style.setProperty("--shx",x.toFixed(1)); document.body.style.setProperty("--shk",(-x*3.2).toFixed(1)+"deg"); }
 function updateTime(s){
   const body=document.body, el=$("#setting"), bl=$("#boardLight");
-  if (!s || body.dataset.setting==="plain"){ body.dataset.tod=""; bl.style.opacity="0"; setShadow(3); return; }
+  if (!s || body.dataset.setting==="plain"){ body.dataset.tod=""; bl.style.opacity="0"; bl.hidden=true; setShadow(3); return; }
   const t=(((s.rollId||0)+4)%DAY_ROLLS)/DAY_ROLLS, h=Math.sin(2*Math.PI*t);
   const night=Math.min(1,Math.max(0,-h*1.8+.12)), warm=Math.max(0,1-Math.abs(h)*3.2);
   body.dataset.tod = h>.3 ? "day" : h<-.25 ? "night" : (t<.25||t>.75 ? "dawn" : "dusk");
@@ -1713,7 +1711,7 @@ function updateTime(s){
   const mix=(a,b,k)=>a.map((v,i)=>Math.round(v+(b[i]-v)*k));
   let sky=mix([191,226,247],[26,35,80],night); sky=mix(sky,[242,162,122],warm*.7);
   el.style.setProperty("--winsky",`rgb(${sky})`);
-  bl.style.opacity="1";
+  bl.style.opacity="1"; bl.hidden = night<.02 && warm<.02 && !["night","living"].includes(body.dataset.setting);
   const st=body.dataset.setting;
   let lean = st==="living" ? 6 : st==="space" ? 2 : (h>-.05 ? (.5-day)*14 : (.5-nt)*8);
   if (st==="night" && night>.5) lean=-7;
@@ -1823,11 +1821,11 @@ function setFace(d){ const on=PIPS[d]||[]; dieEl.querySelectorAll("span").forEac
 /* 3D cube: faces 1..6, each with pips */
 const cubeEl=$("#cube");
 cubeEl.innerHTML='<div class="core"></div><div class="core cx"></div><div class="core cy"></div>'+[1,2,3,4,5,6].map(v=>`<div class="f f${v}">${[...Array(9)].map((_,i)=>`<span class="${PIPS[v].includes(i)?"on":""}"></span>`).join("")}</div>`).join("");
-let rollSeq=0, rollAnims=[], fadeT=null;
+let rollSeq=0, fadeT=null;
 function playRoll(final, seat){
   const id=++rollSeq; seat = seat!=null ? seat : 0;
   G.anim=true;
-  const wrap=$("#roll3d"), pos=$("#rPos"), hop=$("#rHop"), shadow=$("#rShadow");
+  const wrap=$("#roll3d"), pos=$("#rPos"), shadow=$("#rShadow");
   clearTimeout(fadeT);
   wrap.className="roll3d c-"+COLORS[seat];
   wrap.hidden=false; wrap.style.opacity="1"; wrap.style.transition="";
@@ -1840,7 +1838,6 @@ function playRoll(final, seat){
   const cell=($("#board").offsetWidth||600)/15;
   pos.style.width=(sim.size/15*100)+"%";
   cubeEl.style.setProperty("--h",(h*cell)+"px");
-  hop.style.transform="none";
   const draw=f=>{
     G.dieXY=[f.p[0],f.p[1]];
     pos.style.left=(f.p[0]/15*100).toFixed(3)+"%"; pos.style.top=(f.p[1]/15*100).toFixed(3)+"%";
@@ -2022,7 +2019,7 @@ function renderGame(){
   const title=$("#turnTitle"), sub=$("#turnSub");
   if (G.anim && s.diceBy!=null){ const n=seatName(s.diceBy); tp.className="panel turn c-"+COLORS[s.diceBy]; title.textContent = n==="You" ? "You're rolling…" : `${n} is rolling…`; sub.textContent="Watch the board"; }
   else if (s.status==="done"){ title.textContent=`${seatName(s.winners[0])} ${seatName(s.winners[0])==="You"?"win":"wins"}!`; sub.textContent="Game over"; }
-  else if (me){ title.textContent = G.mode==="local" ? `${NAMES[cur]}'s turn` : "Your turn"; sub.textContent = s.rolled ? "Tap a glowing token to move it" : "Tap the die to roll"; }
+  else if (me){ title.textContent = G.mode==="local" ? `${NAMES[cur]}'s turn` : "Your turn"; sub.textContent = s.rolled ? "Tap a glowing token to move it" : "Tap the board or the die to roll"; }
   else {
     const n=seatName(cur);
     title.textContent = s.seats[cur].kind==="bot" ? `${n} is thinking` : `${n}'s turn`;
@@ -2032,6 +2029,7 @@ function renderGame(){
   dieEl.className="die c-"+COLORS[s.diceBy!=null && s.rolled===false && s.status==="playing" ? cur : (s.diceBy!=null?s.diceBy:cur)];
   if (G.anim && s.diceBy!=null) dieEl.className="die rolling c-"+COLORS[s.diceBy];
   const canRoll = me && !s.rolled && s.status==="playing" && !G.anim;
+  document.body.classList.toggle("can-roll", canRoll);
   dieEl.disabled=!canRoll; dieEl.classList.toggle("ready",canRoll);
   dieEl.setAttribute("aria-label", canRoll ? "Roll the die" : (s.dice ? "Last roll "+s.dice : "Die"));
   if (!G.anim) setFace(s.dice||6);
@@ -2067,6 +2065,10 @@ function renderGame(){
   const mOn=()=>lsGet("ludo.mascots")!==false; mb.textContent= mOn() ? "Mascots on" : "Mascots off"; mb.setAttribute("aria-pressed",String(mOn()));
   mb.onclick=()=>{ lsSet("ludo.mascots",!mOn()); mb.textContent= mOn() ? "Mascots on" : "Mascots off"; mb.setAttribute("aria-pressed",String(mOn())); if (!mOn()){ MASCOT.queue.length=0; $("#mascots").innerHTML=""; } };
   tools.appendChild(mb);
+  const fx=document.createElement("button"); fx.className="btn small"; fx.type="button"; fx.id="fxBtn";
+  const fxOn=()=>!document.body.classList.contains("reduce-fx"); const fxLabel=()=>{ fx.textContent= fxOn() ? "Effects: full" : "Effects: reduced"; fx.setAttribute("aria-pressed",String(!fxOn())); }; fxLabel();
+  fx.onclick=()=>{ document.body.classList.toggle("reduce-fx"); lsSet("ludo.reduceFx",!fxOn()); fxLabel(); };
+  tools.appendChild(fx);
   if (G.mode==="online" && s.status==="playing" && G.canWrite!==false){
     const cs=s.seats[cur];
     if (s.host===G.me && cs.kind==="human" && cs.uid!==G.me){
@@ -2114,7 +2116,7 @@ function resetShown(){
   G._sig={};
   stageCounts=null; const tl=document.getElementById("trail"); if (tl) tl.innerHTML="";
   for (const k in shown) delete shown[k]; for (const k in hopping) delete hopping[k]; botRev=-1; autoRev=-1;
-  rollSeq++; G.anim=false; G.lastRollId=null; rollAnims.forEach(a=>{ try{a.cancel();}catch(e){} }); rollAnims=[];
+  rollSeq++; G.anim=false; G.lastRollId=null;
   $("#roll3d").hidden=true; dieEl.classList.remove("rolling");
 }
 
@@ -2175,9 +2177,9 @@ async function loadTables(){
   const ul=$("#tables");
   if (!G.db){ ul.innerHTML='<li class="empty">Online tables appear here when you\'re signed in.</li>'; return; }
   try {
-    const qs=await G.db.collection("games").where("status","==","lobby").limit(40).get();
+    const qs=await G.db.collection("games").where("createdAt",">",Date.now()-3*3600e3).orderBy("createdAt","desc").limit(12).get();
     const now=Date.now();
-    const rows=qs.docs.map(d=>d.data()).filter(d=>d && d.code && now-(d.createdAt||0) < 6*3600e3 && Array.isArray(d.seats))
+    const rows=qs.docs.map(d=>d.data()).filter(d=>d && d.code && d.status==="lobby" && now-(d.createdAt||0) < 3*3600e3 && Array.isArray(d.seats))
       .sort((a,b)=>(b.createdAt||0)-(a.createdAt||0)).slice(0,6);
     if (!rows.length){ ul.innerHTML='<li class="empty">No open tables right now. Create one and share the code.</li>'; return; }
     let ps={}; if (G.user) { try { ps=await G.user.profiles(rows.map(r=>r.host).filter(Boolean)); } catch(e){} }
@@ -2237,6 +2239,10 @@ function setOnlineAvailability(){
 }
 
 $("#homeBtn").onclick=goHome;
+if (lsGet("ludo.reduceFx")===true) document.body.classList.add("reduce-fx");
+$("#mat").addEventListener("click",e=>{ if (e.target.closest(".token.can")) return; const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; audio(); rollAction(false); });
+addEventListener("keydown",e=>{ if ((e.code!=="Space" && e.key!==" ") || $("#game").hidden || e.target.closest("input,select,textarea,button")) return;
+  const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; e.preventDefault(); audio(); rollAction(false); });
 $("#resumeBtn").onclick=resumeLocal;
 $("#discardBtn").onclick=()=>{ saveLocal(null); renderResume(); const b=$("#localBtn"); b.scrollIntoView({behavior:"smooth",block:"center"}); b.focus({preventScroll:true}); toast("Saved game cleared. Pick players and press Start game."); };
 let installEvt=null;
@@ -2292,7 +2298,8 @@ async function firebaseBackend(cfg){
     onSnapshot: (next,err)=>r.onSnapshot(d=>next(wrap(d)), e=>err && err({code:"unavailable", message:e.message})),
   }; };
   const db={ doc,
-    collection: c=>({ where:(f,op,v)=>({ limit:n=>({ get:()=>fs.collection(c).where(f,op,v).limit(n).get().then(q=>({docs:q.docs.map(wrap)}),errOut) }) }) }),
+    collection: c=>{ const q=ref=>({ where:(f,op,v)=>q(ref.where(f,op,v)), orderBy:(f,dir)=>q(ref.orderBy(f,dir)), limit:n=>q(ref.limit(n)),
+      get:()=>ref.get().then(r=>({docs:r.docs.map(wrap)}),errOut) }); return q(fs.collection(c)); },
     // read-modify-write in one transaction, so two lobby changes at once can't clash
     txUpdate: (path,f)=>fs.runTransaction(async tx=>{ const r=fs.doc(path), d=await tx.get(r); if (!d.exists) throw {code:"gone"};
       const data=dec(d.data()); learn(data); delete data.expireAt; const patch=f(data); if (patch) tx.update(r, stamp(path,patch)); }).catch(errOut),

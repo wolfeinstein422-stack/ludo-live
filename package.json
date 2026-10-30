@@ -1,0 +1,13 @@
+{
+  "name": "ludo-live",
+  "private": true,
+  "description": "Online Ludo for 2 to 4 players",
+  "scripts": {
+    "build": "python3 build.py ludo-live.html",
+    "test": "node tests/engine.test.js && node tests/browser.test.js"
+  },
+  "devDependencies": {
+    "esbuild": "0.21.5",
+    "playwright": "1.49.1"
+  }
+}

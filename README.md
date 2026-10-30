@@ -11,9 +11,17 @@ Online Ludo for 2–4 players with characters, settings, board skins and bots. C
 - `sw.template.js`: offline support. `build.py` turns it into `sw.js` with a fresh version stamp, so every update replaces the saved copy on players' devices.
 
 ## Updating the game
-1. Change `ludo-live.html`.
-2. Run `python3 build.py ludo-live.html`.
-3. Commit and push (including the regenerated `index.html` and `sw.js`). GitHub Pages republishes in about a minute.
+1. Change `ludo-live.html` (the readable source; the Claude version uses it as is).
+2. `npm install` once, then `python3 build.py ludo-live.html`. This writes a minified `index.html` and a new `sw.js` version.
+3. `npm test` runs the rule, dice and browser checks.
+4. Commit and push. GitHub Pages republishes in about a minute. Players who have the app saved see a
+   "new version is ready" prompt and switch with one tap.
+
+## Automatic tests
+`.github/workflows/test.yml` runs on every push: the rules and dice simulations, a check that `index.html`
+was rebuilt from the current source, and a real-browser run of Pass and play, tap-to-roll, captures,
+two-player online play (against a stand-in Firebase) and offline reopening. Results show as a green tick
+or red cross next to each commit on GitHub.
 
 ## One-time Firebase setup
 1. Authentication → Sign-in method → enable **Anonymous**.

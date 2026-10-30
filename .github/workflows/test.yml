@@ -1,0 +1,24 @@
+name: Test
+on:
+  push:
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - name: Rules, dice and dice physics
+        run: node tests/engine.test.js
+      - name: The built site still matches the game source
+        run: |
+          cp index.html /tmp/index.committed.html
+          python3 build.py ludo-live.html
+          cmp index.html /tmp/index.committed.html || (echo "index.html is out of date: run python3 build.py ludo-live.html" && exit 1)
+      - name: Website in a real browser
+        run: node tests/browser.test.js
