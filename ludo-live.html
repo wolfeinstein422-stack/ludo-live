@@ -490,6 +490,52 @@ body .die span.on{background:var(--die-pip)}
 .rchip{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 4px;border-radius:999px;background:var(--surface-2);font-size:13px;font-weight:600;box-shadow:inset 0 0 0 1px var(--line)}
 .rchip.now{box-shadow:inset 0 0 0 2px var(--pc)}
 .rchip .mini{width:24px;height:24px}
+/* ---- mascots ---- */
+#mascots{position:fixed;inset:0;pointer-events:none;z-index:30;overflow:hidden}
+.mascot{position:absolute;width:clamp(130px,22vw,240px);aspect-ratio:92/82}
+.mascot.left{left:0;padding-left:env(safe-area-inset-left,0px)}
+.mascot.right{right:0;padding-right:env(safe-area-inset-right,0px)}
+.mascot .m-fig{width:100%;height:100%;filter:drop-shadow(0 8px 14px rgba(0,0,0,.3))}
+.mascot.right .m-fig svg{transform:scaleX(-1)}
+.mascot svg{width:100%;height:100%;overflow:visible}
+.mascot .shd{display:none}
+.mascot .lids{transform:scaleY(0)}
+.mascot.mood-happy .eyes{display:none}
+.mascot.mood-happy .eyes-happy{display:inline}
+.mascot.mood-happy .m-norm{display:none}
+.mascot.mood-happy .m-happy{display:inline}
+.mascot.mood-meh .eyes .pupils{transform:translateY(1.6px)}
+.mascot .m-bubble{position:absolute;top:-6%;max-width:min(240px,52vw);width:max-content;padding:10px 14px;border-radius:16px;background:#FFFFFF;color:#191D2B;
+  font:800 clamp(13px,1.6vw,16px)/1.25 var(--font-display);box-shadow:0 6px 18px rgba(0,0,0,.22),inset 0 0 0 2px var(--pc);opacity:0;transform:scale(.6);transition:opacity .2s,transform .25s cubic-bezier(.3,1.6,.5,1)}
+.mascot.left .m-bubble{left:78%;transform-origin:0 100%}
+.mascot.right .m-bubble{right:78%;transform-origin:100% 100%;text-align:right}
+.mascot.talking .m-bubble{opacity:1;transform:scale(1)}
+.mascot .m-bubble::after{content:"";position:absolute;bottom:-7px;width:14px;height:14px;background:#fff;box-shadow:2px 2px 0 0 var(--pc);transform:rotate(45deg)}
+.mascot.left .m-bubble::after{left:18px} .mascot.right .m-bubble::after{right:18px}
+/* poses */
+.mascot.talking .m-all{transform-origin:30px 58px}
+.mascot.pose-thumbs.talking .m-all{animation:m-bounce .5s ease-in-out infinite alternate}
+.mascot .m-thumb{transform-box:fill-box;transform-origin:50% 100%;animation:m-thumb .6s ease-in-out infinite alternate}
+.mascot.pose-taunt.talking .m-all{animation:m-laugh .16s linear infinite}
+.mascot .m-point{transform-origin:48px 38px;animation:m-point .35s ease-in-out infinite alternate}
+.mascot.pose-cheer.talking .m-all{animation:m-jump .45s ease-in-out infinite alternate}
+.mascot .m-wave{transform-box:view-box}
+.mascot .m-wave.l{transform-origin:12px 38px;animation:m-wave .3s ease-in-out infinite alternate}
+.mascot .m-wave.r{transform-origin:48px 38px;animation:m-wave .3s ease-in-out infinite alternate-reverse}
+.mascot.pose-dance.talking .m-all{animation:m-dance .4s ease-in-out infinite alternate}
+.mascot.pose-shrug.talking .m-all{animation:m-shrug 1s ease-in-out infinite}
+.mascot.pose-upset.talking .m-all{animation:m-stomp .22s linear infinite}
+.mascot .m-steam{animation:m-steam .6s ease-out infinite}
+@keyframes m-bounce{to{transform:translateY(-4px)}}
+@keyframes m-thumb{to{transform:rotate(-14deg) scale(1.15)}}
+@keyframes m-laugh{25%{transform:translate(-1px,1px) rotate(-2deg)}75%{transform:translate(1px,-1px) rotate(2deg)}}
+@keyframes m-point{to{transform:rotate(-8deg) translateX(2px)}}
+@keyframes m-jump{from{transform:translateY(2px) scale(1.04,.96)}to{transform:translateY(-8px) scale(.97,1.04)}}
+@keyframes m-wave{from{transform:rotate(-14deg)}to{transform:rotate(14deg)}}
+@keyframes m-dance{from{transform:rotate(-9deg) translateY(0)}to{transform:rotate(9deg) translateY(-6px)}}
+@keyframes m-shrug{0%,100%{transform:none}40%,60%{transform:translateY(-3px) rotate(-3deg)}}
+@keyframes m-stomp{50%{transform:translateY(2px) rotate(1deg)}}
+@keyframes m-steam{0%{opacity:0;transform:translateY(4px)}40%{opacity:1}100%{opacity:0;transform:translateY(-6px)}}
 .mini{width:28px;height:28px;flex:none;display:inline-block}
 .mini svg{width:100%;height:100%;overflow:visible}
 .picker{display:flex;gap:5px;flex-wrap:wrap}
@@ -679,6 +725,7 @@ body .die span.on{background:var(--die-pip)}
     </div>
   </section>
 </div>
+<div id="mascots" aria-live="polite"></div>
 <div class="toast" id="toast" hidden></div>
 
 <script>
@@ -1313,6 +1360,8 @@ function renderTokens(){
 async function enter(el,x,y,sc,k,st){
   const id=animId[k]=(animId[k]||0)+1; hopping[k]=true; movingSince[k]=performance.now(); kickGaze();
   setState(el,"move"); oneShot(el,"fx-enter",900); place(el,x,y,sc);
+  { const seat=Math.floor(k/4), s=G.state, out= s ? s.tokens[seat].filter(p=>p>=0&&p<56).length : 0;
+    if (out===1 || seeded((s&&s.rollId||0)*3+seat)<.35) mascotEvent("out",seat,{delay:350}); }
   await sleep(850); if (animId[k]!==id) return;
   hopping[k]=false; delete movingSince[k]; setState(el,st);
 }
@@ -1324,6 +1373,7 @@ async function knock(el,x,y,sc,k,lm,s){
   const wait = lm && lm.from>=0 ? moveDuration(charOf(s,lm.seat), lm.to-lm.from)-60 : 500;
   await sleep(wait); if (animId[k]!==id) return;
   captureImpact(k, el._x, el._y);
+  if (lm && lm.seat!=null){ mascotEvent("capture", lm.seat, {victim:Math.floor(k/4)}); mascotEvent("captured", Math.floor(k/4), {delay:150}); }
   el.classList.remove("knocked-wait"); el.classList.add("knocked"); movingSince[k]=performance.now(); kickGaze(); place(el,x,y,sc);
   await sleep(700); if (animId[k]!==id) return;
   el.classList.remove("knocked","scared"); hopping[k]=false; delete movingSince[k]; setState(el,"yard");
@@ -1381,7 +1431,7 @@ async function hop(el,seat,from,to,t,fx,fy,fsc,k,st){
   pose(el,0,1,1,0); el.classList.remove("hopping","flapping");
   place(el,fx,fy,fsc);
   hopping[k]=false; delete movingSince[k]; setState(el,st);
-  if (st==="home") oneShot(el,"fx-arrive",1600);
+  if (st==="home"){ oneShot(el,"fx-arrive",1600); if (G.state && G.state.status!=="done") mascotEvent("home",seat,{delay:300}); }
   else if (st==="safe") oneShot(el,"fx-safe",700);
 }
 
@@ -1672,6 +1722,100 @@ function updateTime(s){
   bl.style.setProperty("--glow", night.toFixed(3));
 }
 
+/* ---------- Mascots: each set's big character leans in from its player's side of the screen ---------- */
+const LINES={
+  robot:  {capture:["Target removed. Beep boop.","Error 404: {v} not found.","Rebooting you to the yard, {v}."], captured:["Does not compute!","Recalibrating… grr."],
+           out:["Systems online!","Deploying unit!","Boot complete."], six:["Lucky number detected!","Six! Calculating victory…"], home:["Unit docked!","Mission complete."],
+           win:["VICTORY.EXE","All units home. Flawless."], nomove:["Processing… nothing.","Standby mode."]},
+  frog:   {capture:["Ribbit! Splash, you're out!","Hop along home, {v}!","Croak-tastic!"], captured:["Not my lily pad!","Ribbit… rude!"],
+           out:["Hop to it!","Leap time!"], six:["Super hop!","Six! Ribbit!"], home:["Made it to the pond!","Splash landing!"],
+           win:["King of the pond!","Ribbit! Champion!"], nomove:["Just… sitting here.","Catching flies instead."]},
+  chick:  {capture:["Peck peck, gone!","Cheep cheep, see ya {v}!","Shoo, back to your coop!"], captured:["Fowl play!","Hey! Cheep!"],
+           out:["Out of the nest!","Flap flap, go!"], six:["Egg-cellent!","Six! Cheep cheep!"], home:["Home to roost!","Nest sweet nest!"],
+           win:["Winner winner!","Top chick!"], nomove:["Cheep… nothing.","Pecking at nothing."]},
+  cat:    {capture:["Pounced. Purr-fect.","Meow-t you go, {v}!","Should've stayed in, {v}."], captured:["Hiss!","Claws out now!"],
+           out:["Stretch… and go!","Paws out!"], six:["Purr-fect six!","Six. Obviously."], home:["Napping at home.","Curled up. Done."],
+           win:["Bow to the cat.","Cat-astrophic for you all!"], nomove:["Too lazy anyway.","Meh. Nap time."]},
+  owl:    {capture:["Whoo's out? You are!","Wise move. Sorry, {v}.","Saw that coming. Hoo!"], captured:["Whoo did that?!","Hoo-ow!"],
+           out:["Taking flight!","Hoo-ray, I'm out!"], six:["Six, as predicted.","Hoo! Six!"], home:["Back to the nest.","Hoo-me sweet home."],
+           win:["Owl-standing!","Wisest of them all."], nomove:["Hmm… I'll wait.","Patience. Hoo."]},
+  penguin:{capture:["Slid right past you!","Ice to beat you, {v}!","Waddle bye, {v}!"], captured:["Brrr, rude!","Cold move!"],
+           out:["Waddle waddle, go!","Off the ice!"], six:["Cool six!","Six! Ice ice baby."], home:["Chillin' at home.","Slid in safe!"],
+           win:["Coolest one here!","Ice cold victory!"], nomove:["Waddling in place.","Brr… nothing."]},
+  classic:{capture:["Gotcha!","Back you go, {v}!","Sorry, not sorry!"], captured:["Hey!","Not fair!"],
+           out:["Here I come!","Let's go!"], six:["Six!","Roll on!"], home:["One home!","Safe and sound!"],
+           win:["Winner!","Champion!"], nomove:["Nothing to do…","Next time."]},
+};
+const MASCOT_POSE={capture:"taunt", captured:"upset", out:"thumbs", six:"cheer", home:"cheer", win:"dance", nomove:"shrug"};
+const MASCOT_PRI={win:9, capture:7, captured:6, home:5, out:4, six:3, nomove:2};
+const MASCOT_HOLD={win:3200, capture:2300, captured:1700};
+// A cartoon pawn stands in as the Classic set's mascot.
+function pawnMascot(i,st){ const [m,l,d]=PAL[i];
+  return `${SH}<g class="body"><path d="M14 55c0-8 6-12 11-13l3-15h4l3 15c5 1 11 5 11 13z" fill="${m}" stroke="${d}"/><rect x="18" y="24" width="24" height="6" rx="3" fill="${m}" stroke="${d}"/>
+  <circle cx="30" cy="15" r="13" fill="${m}" stroke="${d}"/><ellipse cx="25" cy="9" rx="4" ry="2.6" fill="#fff" opacity=".5"/>${face(25,35,15,21,st,m,3.6)}</g>`; }
+// Arms are drawn on the inner side (towards the board); the whole figure is mirrored on the right edge.
+function mascotArms(pose,i){
+  const [m,,d]=PAL[i];
+  const arm=(x1,y1,x2,y2)=>`<path d="M${x1} ${y1}Q${(x1+x2)/2+3} ${(y1+y2)/2+6} ${x2} ${y2}" stroke="${d}" stroke-width="6" fill="none" stroke-linecap="round"/><path d="M${x1} ${y1}Q${(x1+x2)/2+3} ${(y1+y2)/2+6} ${x2} ${y2}" stroke="${m}" stroke-width="3.6" fill="none" stroke-linecap="round"/>`;
+  const fist=(x,y)=>`<circle cx="${x}" cy="${y}" r="5" fill="${m}" stroke="${d}" stroke-width="1.2"/>`;
+  const thumb=(x,y)=>`<g class="m-thumb">${fist(x,y)}<rect x="${x-1.8}" y="${y-11}" width="3.6" height="8" rx="1.8" fill="${m}" stroke="${d}" stroke-width="1.1"/></g>`;
+  const point=(x,y)=>`${fist(x,y)}<rect x="${x+2}" y="${y-1.8}" width="10" height="3.6" rx="1.8" fill="${m}" stroke="${d}" stroke-width="1.1"/>`;
+  const palm=(x,y)=>`<circle cx="${x}" cy="${y}" r="5.5" fill="${m}" stroke="${d}" stroke-width="1.2"/><path d="M${x-4} ${y-4}l-1 -4M${x} ${y-5}v-4.5M${x+4} ${y-4}l1 -4" stroke="${d}" stroke-width="2" stroke-linecap="round"/>`;
+  switch(pose){
+    case "thumbs": return arm(12,40,4,50)+fist(4,50)+arm(48,40,62,26)+thumb(62,26);
+    case "taunt":  return arm(12,40,20,48)+fist(20,48)+`<g class="m-point">${arm(48,38,64,34)+point(64,34)}</g>`;
+    case "cheer":  return `<g class="m-wave l">${arm(12,38,0,18)+palm(0,18)}</g><g class="m-wave r">${arm(48,38,60,18)+palm(60,18)}</g>`;
+    case "dance":  return `<g class="m-wave l">${arm(12,38,-2,22)+palm(-2,22)}</g><g class="m-wave r">${arm(48,38,62,22)+palm(62,22)}</g>`;
+    case "shrug":  return arm(12,40,-2,36)+palm(-2,36)+arm(48,40,62,36)+palm(62,36);
+    case "upset":  return arm(12,40,18,30)+fist(18,30)+arm(48,40,42,30)+fist(42,30)+`<path class="m-steam" d="M8 4q-4-6 0-10M52 4q4-6 0-10" stroke="#9AA3B8" stroke-width="2.4" fill="none" stroke-linecap="round"/>`;
+  }
+  return "";
+}
+const MASCOT={queue:[], busy:false, seen:{}};
+const mascotsOn=()=> lsGet("ludo.mascots")!==false && !reduceMotion;
+const seeded=n=>{ const x=Math.sin(n*12.9898+78.233)*43758.5453; return x-Math.floor(x); };
+// Queue a mascot moment. key keeps one moment per event even when several pieces are involved.
+function mascotEvent(type,seat,info={}){
+  if (!mascotsOn() || !G.state || $("#game").hidden || seat==null || seat<0) return;
+  const key=type+":"+seat+":"+(info.key ?? G.state.rollId);
+  if (MASCOT.seen[key]) return; MASCOT.seen[key]=1;
+  const pr=MASCOT_PRI[type]||1;
+  if (MASCOT.queue.length>=2 && pr<6) return;
+  MASCOT.queue.push({type,seat,info,pr,roll:G.state.rollId||0}); MASCOT.queue.sort((a,b)=>b.pr-a.pr);
+  runMascots();
+}
+async function runMascots(){
+  if (MASCOT.busy) return; const job=MASCOT.queue.shift(); if (!job) return;
+  MASCOT.busy=true; try { await showMascot(job); } catch(e){} MASCOT.busy=false; setTimeout(runMascots,200);
+}
+async function showMascot({type,seat,info,roll}){
+  if (info.delay) await sleep(info.delay);
+  const s=G.state; if (!s || $("#game").hidden) return;
+  const ch=charOf(s,seat), lines=(LINES[ch]||LINES.classic)[type]||LINES.classic[type];
+  let victim = info.victim!=null ? seatName(info.victim) : ""; if (victim==="You") victim="you";
+  const line=lines[Math.floor(seeded(roll*31+seat*7+(MASCOT_PRI[type]||0))*lines.length)].replace("{v}",victim);
+  const pose=MASCOT_POSE[type]||"thumbs", right= seat===1 || seat===2;
+  const body = ch==="classic" ? pawnMascot(seat, type==="captured"?"scared":"idle") : (CH[ch])(seat, type==="captured"?"scared":"idle");
+  const el=document.createElement("div");
+  el.className=`mascot ${right?"right":"left"} c-${COLORS[seat]} ch-${ch} pose-${pose} mood-${type==="captured"?"upset":type==="nomove"?"meh":"happy"}`;
+  el.style.top = (seat<2 ? 22 : 62)+"%";
+  el.setAttribute("role","status");
+  el.innerHTML=`<div class="m-fig"><svg viewBox="-14 -14 92 82" aria-hidden="true"><g class="m-all">${body}${mascotArms(pose,seat)}</g></svg></div><div class="m-bubble"></div>`;
+  el.querySelector(".m-bubble").textContent=line;
+  $("#mascots").appendChild(el);
+  const side=right?1:-1, hold=MASCOT_HOLD[type]||1800;
+  const enterA=el.animate([{transform:`translateX(${side*110}%) rotate(${side*-28}deg)`},{transform:`translateX(${side*14}%) rotate(${side*-6}deg)`,offset:.75},{transform:`translateX(${side*20}%) rotate(${side*-9}deg)`}],{duration:520,easing:"cubic-bezier(.3,1.4,.5,1)",fill:"forwards"});
+  tap(right?520:480,.07); setTimeout(()=>tap(700,.05),120);
+  if (type==="capture") setTimeout(()=>{ tap(880,.05); setTimeout(()=>tap(990,.05),90); setTimeout(()=>tap(1100,.05),180); },500);
+  await enterA.finished.catch(()=>{});
+  el.classList.add("talking");
+  await sleep(hold);
+  el.classList.remove("talking");
+  const exitA=el.animate([{transform:`translateX(${side*20}%) rotate(${side*-9}deg)`},{transform:`translateX(${side*115}%) rotate(${side*-30}deg)`}],{duration:380,easing:"cubic-bezier(.5,0,.8,.4)",fill:"forwards"});
+  await exitA.finished.catch(()=>{});
+  el.remove();
+}
+
 /* ---------- Die ---------- */
 const dieEl=$("#die");
 dieEl.innerHTML="<span></span>".repeat(9);
@@ -1689,7 +1833,8 @@ function playRoll(final, seat){
   wrap.hidden=false; wrap.style.opacity="1"; wrap.style.transition="";
   dieEl.classList.add("rolling");
   let finished=false;
-  const done=()=>{ if (id!==rollSeq || finished) return; finished=true; const dpos=G.dieXY; G.anim=false; G.dieXY=null; if (final===6 && dpos) ripple(dpos[0],dpos[1]); dieEl.classList.remove("rolling"); setFace(final); route();
+  const done=()=>{ if (id!==rollSeq || finished) return; finished=true; const dpos=G.dieXY; G.anim=false; G.dieXY=null; if (final===6 && dpos) ripple(dpos[0],dpos[1]);
+    if (final===6 && G.state && !stuckInYard(G.state,seat) && seeded((G.state.rollId||0)*5+seat)<.4) mascotEvent("six",seat); dieEl.classList.remove("rolling"); setFace(final); route();
     fadeT=setTimeout(()=>{ if (id!==rollSeq) return; wrap.style.transition="opacity .35s"; wrap.style.opacity="0"; setTimeout(()=>{ if (id===rollSeq) wrap.hidden=true; },370); },1100); };
   const sim=throwDie(seat, final), F=sim.frames, h=sim.size/2, hits=sim.impacts.slice();
   const cell=($("#board").offsetWidth||600)/15;
@@ -1856,6 +2001,7 @@ function handleDone(s){
   const key=(G.code||"local")+":"+(s.rollId||0)+":"+s.winners.join("");
   if (G.doneKey!==key){
     G.doneKey=key; G.doneAt=Date.now(); board.classList.add("party");
+    mascotEvent("win", s.winners[0], {key:"win"});
     fireworks([PAL[s.winners[0]][1], PAL[s.winners[0]][0], "#FFD34D", "#ffffff", ...(s.winners[1]!=null?[PAL[s.winners[1]][1]]:[])]);
     if (G.mode==="local") lsSet("ludo.localWins", s.wins||{});
     setTimeout(()=>{ if (G.doneKey===key && G.state){ board.classList.remove("party"); route(); } }, 3600);
@@ -1865,6 +2011,7 @@ function handleDone(s){
 // Rebuild a part of the screen only when what it shows has changed.
 function same(key,val){ const v=JSON.stringify(val); G._sig=G._sig||{}; if (G._sig[key]===v) return true; G._sig[key]=v; return false; }
 function renderGame(){
+  { const e=G.state && G.state.log && G.state.log[0]; if (e && e.k==="nomove" && G.lastNomove!==G.state.rollId){ G.lastNomove=G.state.rollId; if (seeded(G.state.rollId*11+e.c)<.25) mascotEvent("nomove",e.c,{delay:G.anim?1900:300}); } }
   const s=G.state;
   if (G.lastRollId===null) G.lastRollId=s.rollId||0;
   else if (s.rollId && s.rollId!==G.lastRollId && s.dice){ G.lastRollId=s.rollId; playRoll(s.dice, s.diceBy); }
@@ -1916,6 +2063,10 @@ function renderGame(){
   snd.textContent= soundOn ? "Sound on" : "Sound off"; snd.setAttribute("aria-pressed",String(soundOn));
   snd.onclick=()=>{ soundOn=!soundOn; lsSet("ludo.sound",soundOn); if (soundOn){ audio(); tap(660,.08); } snd.textContent= soundOn ? "Sound on" : "Sound off"; snd.setAttribute("aria-pressed",String(soundOn)); };
   tools.appendChild(snd);
+  const mb=document.createElement("button"); mb.className="btn small"; mb.type="button"; mb.id="mascotBtn";
+  const mOn=()=>lsGet("ludo.mascots")!==false; mb.textContent= mOn() ? "Mascots on" : "Mascots off"; mb.setAttribute("aria-pressed",String(mOn()));
+  mb.onclick=()=>{ lsSet("ludo.mascots",!mOn()); mb.textContent= mOn() ? "Mascots on" : "Mascots off"; mb.setAttribute("aria-pressed",String(mOn())); if (!mOn()){ MASCOT.queue.length=0; $("#mascots").innerHTML=""; } };
+  tools.appendChild(mb);
   if (G.mode==="online" && s.status==="playing" && G.canWrite!==false){
     const cs=s.seats[cur];
     if (s.host===G.me && cs.kind==="human" && cs.uid!==G.me){
@@ -1959,6 +2110,7 @@ function renderGame(){
   maybeBot(); maybeAuto();
 }
 function resetShown(){
+  if (typeof MASCOT!=="undefined"){ MASCOT.queue.length=0; MASCOT.seen={}; const ml=document.getElementById("mascots"); if (ml) ml.innerHTML=""; }
   G._sig={};
   stageCounts=null; const tl=document.getElementById("trail"); if (tl) tl.innerHTML="";
   for (const k in shown) delete shown[k]; for (const k in hopping) delete hopping[k]; botRev=-1; autoRev=-1;
