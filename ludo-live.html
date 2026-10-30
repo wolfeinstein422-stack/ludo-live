@@ -653,6 +653,21 @@ body.can-roll .mat{cursor:pointer}
 .spinchip.on{background:var(--pc);color:#fff;border-color:#fff;transform:scale(1.12)}
 .spinchip svg{width:22px;height:22px}
 .passdev h2{font:800 28px/1.1 var(--font-display)}
+
+/* reactions in your fort */
+.fx.react-fort{z-index:3;width:30%;display:grid;place-items:center;animation:rf-in .35s cubic-bezier(.2,1.6,.4,1) both, rf-out .4s ease-in 2.2s forwards}
+.fx.react-fort span{display:block;font-size:clamp(46px,11vw,96px);line-height:1;filter:drop-shadow(0 4px 6px rgba(0,0,0,.35));animation:rf-bounce .55s ease-in-out .3s 4 both}
+@keyframes rf-in{from{transform:translate(-50%,-50%) scale(.2);opacity:0}to{transform:translate(-50%,-50%) scale(1);opacity:1}}
+@keyframes rf-out{to{transform:translate(-50%,-70%) scale(.6);opacity:0}}
+@keyframes rf-bounce{0%,100%{transform:translateY(0) rotate(0) scale(1)}20%{transform:translateY(-22%) rotate(var(--tilt,8deg)) scale(1.08,.95)}45%{transform:translateY(0) rotate(calc(var(--tilt,8deg)*-1)) scale(.94,1.06)}65%{transform:translateY(-9%) rotate(calc(var(--tilt,8deg)*.6))}85%{transform:translateY(0) rotate(calc(var(--tilt,8deg)*-.4)) scale(1.04,.96)}}
+.yard.fort-shake{animation:fort-shake .55s ease-in-out 4}
+@keyframes fort-shake{0%,100%{transform:none}15%{transform:translate(-2px,1px) rotate(-.6deg)}35%{transform:translate(2px,-2px) rotate(.6deg)}55%{transform:translate(-1px,-1px) rotate(-.3deg)}75%{transform:translate(1px,1px) rotate(.3deg)}}
+.token.fort-jig .id{animation:fort-jig .55s ease-in-out 4!important}
+@keyframes fort-jig{0%,100%{transform:translateY(0)}30%{transform:translateY(-18%) scale(1.05,.95)}60%{transform:translateY(0) scale(.95,1.05)}}
+#reacts button.pressed{animation:pressed .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes pressed{0%{transform:scale(1)}35%{transform:scale(.82)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
+.react-echo{position:fixed;z-index:70;pointer-events:none;font-size:56px;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));animation:rf-echo 2.6s ease-in-out forwards}
+@keyframes rf-echo{0%{transform:translate(-50%,-60%) scale(.2);opacity:0}10%{transform:translate(-50%,-110%) scale(1.1);opacity:1}25%{transform:translate(-50%,-100%) rotate(-8deg)}40%{transform:translate(-50%,-125%) rotate(8deg)}55%{transform:translate(-50%,-100%) rotate(-6deg)}70%{transform:translate(-50%,-120%) rotate(6deg)}85%{transform:translate(-50%,-105%);opacity:1}100%{transform:translate(-50%,-150%) scale(.7);opacity:0}}
 </style>
 
 <div id="setting" hidden aria-hidden="true"><div id="settingScene"></div><div class="dapple"></div><div class="tod-warm"></div><div class="tod-night"></div><div class="tod-stars"></div><div class="celestial"><i class="sun"></i><i class="moon"></i></div><div class="night-glow"></div><div class="fall"></div></div>
@@ -1717,16 +1732,36 @@ function fireworks(colors,ms=6500){
 }
 // Emoji reactions that float up from a player's corner.
 const REACTS=["😂","😮","😤","👏","❤️","😎"];
-function showReaction(seat,e){
-  const [x,y]= seat>=0 ? [YARD[seat][0]+3, YARD[seat][1]+3] : [7.5,7.5];
-  const d=fxAt("react",x,y,`<span>${e}</span>`,2300); if (d) d.style.setProperty("--dx",((Math.random()*2-1)*28).toFixed(0)+"px");
+// A reaction takes over the sender's fort: a big emoji bounces and wiggles there for about 2.5 seconds,
+// the fort shakes along with it and the pieces inside jiggle.
+const REACT_MS=2600;
+function showReaction(seat,e,mine){
+  if (seat<0){ const d=fxAt("react",7.5,7.5,`<span>${e}</span>`,2300); if (d) d.style.setProperty("--dx",((Math.random()*2-1)*28).toFixed(0)+"px"); return; }
+  document.querySelectorAll(`.fx.react-fort[data-seat="${seat}"]`).forEach(n=>n.remove());
+  const d=fxAt("react-fort",YARD[seat][0]+3,YARD[seat][1]+3,`<span>${e}</span>`,REACT_MS);
+  if (d){ d.dataset.seat=seat; d.style.setProperty("--tilt",(seat%2?-1:1)*8+"deg"); }
+  const y=yardEls[seat]; if (y) oneShot(y,"fort-shake",REACT_MS-200);
+  if (G.state) G.state.tokens[seat].forEach((p,t)=>{ const el=tokenEls[seat*4+t]; if (p<0 && el && !el.hidden) oneShot(el,"fort-jig",REACT_MS-300); });
+  // On a phone the board is often scrolled away from the React buttons, so echo it next to them too.
+  if (mine && y){ const r=y.getBoundingClientRect(); if (r.bottom<40 || r.top>innerHeight-40){
+    const box=$("#reacts").getBoundingClientRect(), ec=document.createElement("div"); ec.className="react-echo"; ec.textContent=e;
+    ec.style.left=(box.left+box.width/2)+"px"; ec.style.top=(box.top)+"px"; document.body.appendChild(ec); setTimeout(()=>ec.remove(),REACT_MS); } }
+}
+// Which fort a reaction comes from: online it's yours; in Pass and play it's the person playing now
+// (or the last person who played, while a bot is rolling).
+function reactSeat(){
+  const s=G.state; if (G.mode!=="local") return mySeat();
+  const hum=activeSeats(s).filter(i=>s.seats[i].kind==="human");
+  if (hum.includes(s.turn)) return s.turn;
+  if (hum.includes(G.lastHuman)) return G.lastHuman;
+  return hum.length ? hum[0] : s.turn;
 }
 let lastReact=0;
 function sendReaction(e){
   if (!G.state || !REACTS.includes(e)) return;
-  const now=Date.now(); if (now-lastReact<700) return; lastReact=now;
-  const seat = G.mode==="local" ? G.state.turn : mySeat();
-  showReaction(seat,e);
+  const now=Date.now(); if (now-lastReact<500) return; lastReact=now;
+  const seat = reactSeat();
+  showReaction(seat,e,true);
   if (G.mode==="online" && G.roomJ) G.roomJ.emit("react",{e, s:seat}).catch(()=>{});
 }
 async function joinRoom(code){
@@ -2462,7 +2497,7 @@ if (matchMedia("(pointer:fine)").matches && !reduceMotion){
     $("#tokens").style.transform=`translate(${(mx*5).toFixed(1)}px,${(my*5).toFixed(1)}px)`; });
   mat.addEventListener("pointerleave",()=>{ $("#tokens").style.transform=""; });
 }
-REACTS.forEach(e=>{ const b=document.createElement("button"); b.type="button"; b.textContent=e; b.setAttribute("aria-label","React "+e); b.onclick=()=>{ audio(); sendReaction(e); }; $("#reacts").appendChild(b); });
+REACTS.forEach(e=>{ const b=document.createElement("button"); b.type="button"; b.textContent=e; b.setAttribute("aria-label","React "+e); b.onclick=()=>{ audio(); oneShot(b,"pressed",400); tap(720,.05); sendReaction(e); }; $("#reacts").appendChild(b); });
 $("#createBtn").onclick=createTable;
 $("#joinForm").addEventListener("submit",e=>{ e.preventDefault(); openOnline($("#joinCode").value); });
 $("#joinCode").addEventListener("input",e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""); });

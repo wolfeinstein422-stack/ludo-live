@@ -54,6 +54,8 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
     check((await p.textContent("#players")).includes("Asha") && (await p.textContent("#players")).includes("Ben"), "players list shows names");
     await p.mouse.click(300, 500); await p.waitForTimeout(2600);
     check((await p.textContent("#log")).includes("rolled") || (await p.textContent("#log")).includes("brought"), "tapping the board rolls");
+    await p.click("#reacts button:nth-child(1)"); await p.waitForTimeout(2000);
+    check(await p.$$eval(".fx.react-fort", e => e.length === 1), "a reaction is still bouncing in the fort after 2 seconds");
     await p.click("#homeBtn").catch(() => {}); await p.waitForTimeout(400);
     if (await p.$eval("#home", e => e.hidden)) { await p.goto(URL, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(900); }
     check(await p.$eval("#quickRow", e => !e.hidden) && (await p.textContent("#quickText")).includes("Asha"), "quick start remembers the players");
