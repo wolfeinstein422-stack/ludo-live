@@ -1922,8 +1922,18 @@ async function runMascots(){
   if (MASCOT.busy) return; const job=MASCOT.queue.shift(); if (!job) return;
   MASCOT.busy=true; try { await showMascot(job); } catch(e){} MASCOT.busy=false; setTimeout(runMascots,200);
 }
+// Mascots never talk over a moving die: wait until the throw has landed (or a roll that has
+// arrived but not started yet has played out), then a short beat so the result reads first.
+const diceMoving=()=> G.anim || (G.state && G.state.rollId && G.state.dice && G.lastRollId!=null && G.state.rollId!==G.lastRollId);
+async function diceStill(){
+  const t0=Date.now();
+  while (Date.now()-t0<6000){
+    if (diceMoving()){ await sleep(60); continue; }
+    await sleep(350); if (!diceMoving()) return;
+  }
+}
 async function showMascot({type,seat,info,roll}){
-  if (info.delay) await sleep(info.delay);
+  await sleep(info.delay||0); await diceStill();
   const s=G.state; if (!s || $("#game").hidden) return;
   const ch=charOf(s,seat), lines=(LINES[ch]||LINES.classic)[type]||LINES.classic[type];
   let victim = info.victim!=null ? seatName(info.victim) : ""; if (victim==="You") victim="you";
@@ -2146,7 +2156,7 @@ function handleDone(s){
 // Rebuild a part of the screen only when what it shows has changed.
 function same(key,val){ const v=JSON.stringify(val); G._sig=G._sig||{}; if (G._sig[key]===v) return true; G._sig[key]=v; return false; }
 function renderGame(){
-  { const e=G.state && G.state.log && G.state.log[0]; if (e && e.k==="nomove" && G.lastNomove!==G.state.rollId){ G.lastNomove=G.state.rollId; if (seeded(G.state.rollId*11+e.c)<.25) mascotEvent("nomove",e.c,{delay:G.anim?1900:300}); } }
+  { const e=G.state && G.state.log && G.state.log[0]; if (e && e.k==="nomove" && G.lastNomove!==G.state.rollId){ G.lastNomove=G.state.rollId; if (seeded(G.state.rollId*11+e.c)<.25) mascotEvent("nomove",e.c,{delay:150}); } }
   const s=G.state;
   if (G.lastRollId===null) G.lastRollId=s.rollId||0;
   else if (s.rollId && s.rollId!==G.lastRollId && s.dice){ G.lastRollId=s.rollId; playRoll(s.dice, s.diceBy); }
