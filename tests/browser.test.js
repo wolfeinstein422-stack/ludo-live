@@ -18,7 +18,9 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
   await new Promise(r => server.listen(8765, r));
   const URL = "http://localhost:8765/";
   const b = await chromium.launch();
-  const newCtx = async () => { const ctx = await b.newContext({ viewport: { width: 1100, height: 820 } });
+  // The offline check needs the service worker; elsewhere it's blocked, because Playwright can't stand in for
+  // requests a service worker makes, so a second page would load the real Firebase instead of the stand-in.
+  const newCtx = async (sw = false) => { const ctx = await b.newContext({ viewport: { width: 1100, height: 820 }, serviceWorkers: sw ? "allow" : "block" });
     await ctx.route("https://www.gstatic.com/**", r => r.fulfill({ status: 200, contentType: "text/javascript", body: fake }));
     await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.fulfill({ status: 200, contentType: "text/css", headers: { "access-control-allow-origin": "*" }, body: "" }));
     return ctx; };
@@ -75,6 +77,24 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
     check(await p.$eval("#passDev", e => e.hidden), "it goes away when the player is ready");
     await ctx.close(); }
 
+  // 2b. Finishing the game: the podium shows the ranking, the winner cheers and the rest clap
+  { const st = { status: "playing", host: null, rev: 5, rollId: 7, turn: 0, rolled: true, dice: 1, diceBy: 0, sixes: 0, winners: [], lastMove: null,
+      seats: [{ kind: "human", uid: null, char: "chick", name: "Asha" }, { kind: "off", uid: null, char: "robot" }, { kind: "human", uid: null, char: "owl", name: "Ben" }, { kind: "off", uid: null, char: "cat" }],
+      tokens: [[56,56,56,55],[-1,-1,-1,-1],[10,-1,-1,-1],[-1,-1,-1,-1]], log: [{ k: "start" }] };
+    const ctx = await newCtx(), p = await open(ctx, { fn: s => { window.claude = { hot: { data: { localState: s } } }; }, arg: st });
+    await p.waitForSelector(".token.can", { timeout: 5000 }).catch(() => {});
+    await p.click(".token.can").catch(() => {});
+    await p.waitForSelector("#over.podium:not([hidden])", { timeout: 6000 }).catch(() => {});
+    check(await p.$eval("#over", e => !e.hidden && e.classList.contains("podium")), "the podium appears when the second-to-last player finishes");
+    check((await p.textContent(".pod-head h2")).trim() === "Asha wins!", "it names the winner");
+    check(await p.$eval(".pod-scene", e => e.getAttribute("aria-label")) === "Final ranking: 1st Asha, 2nd Ben", "it ranks everyone in order");
+    check(await p.$$eval(".pc-win", e => e.length) === 1 && await p.$$eval(".pc-clap", e => e.length) === 1, "the winner cheers and the other player claps");
+    check(await p.$$eval(".pod-scene .pod-crown", e => e.length) === 1, "the winner gets a crown");
+    await p.waitForTimeout(2800); await p.click(".pod-btns .btn.primary");
+    await p.waitForTimeout(1500);
+    check(await p.$eval("#over", e => e.hidden || !e.classList.contains("podium")), "Play again leaves the podium");
+    await ctx.close(); }
+
   // 3. A capture only scares the victim once it's chosen, and is logged
   { const st = { status: "playing", host: null, rev: 5, rollId: 3, turn: 0, rolled: true, dice: 5, diceBy: 0, sixes: 0, winners: [], lastMove: null,
       seats: ["frog","owl","penguin","robot"].map(c => ({ kind: "human", uid: null, char: c })), tokens: [[1,-1,-1,-1],[-1,-1,-1,-1],[32,-1,-1,-1],[-1,-1,-1,-1]], log: [{ k: "start" }] };
@@ -102,7 +122,7 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
     await ctx.close(); }
 
   // 5. Offline: the saved copy opens and offers to continue
-  { const ctx = await newCtx(), p = await open(ctx);
+  { const ctx = await newCtx(true), p = await open(ctx);
     const sw = await p.evaluate(() => navigator.serviceWorker ? navigator.serviceWorker.ready.then(() => true) : false);
     await p.reload({ waitUntil: "domcontentloaded" }); await p.waitForTimeout(800);
     await local(p, ["human","off","bot","off"]); await p.mouse.click(300, 500); await p.waitForTimeout(3000);

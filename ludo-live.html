@@ -598,6 +598,54 @@ body.can-roll .mat{cursor:pointer}
 .over ol{text-align:left;margin:0;padding:0;list-style:none;display:grid;gap:6px}
 .over ol li{display:flex;gap:10px;align-items:center;font-weight:600}
 .over ol li em{font-style:normal;font:700 13px var(--font-display);color:var(--muted);width:28px}
+/* ---- end screen: 2.5D podium, winner cheers, the rest applaud ---- */
+.over.podium{display:block;padding:0;overflow:hidden;z-index:8;background:color-mix(in srgb,#0E1230 93%,transparent)}
+.podium .fw2{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.podium .pod-head{position:absolute;left:8px;right:8px;top:4%;text-align:center;animation:pod-up .5s ease-out 1.2s both}
+.podium .pod-head h2{color:#FFD34D;font:800 clamp(22px,5.6vw,40px)/1.05 var(--font-display);margin:0;text-shadow:0 3px 0 rgba(0,0,0,.35);overflow-wrap:anywhere}
+.podium .pod-head p{margin:4px 0 0;color:#E8EAF6;font-weight:700;font-size:clamp(12px,2.4vw,15px)}
+.podium .pod-scene{position:absolute;left:0;top:16%;width:100%;height:68%;overflow:visible}
+.podium .pod-btns{position:absolute;left:8px;right:8px;bottom:3.5%;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;animation:pod-up .5s ease-out 2.6s both}
+.podium .pod-btns p{width:100%;margin:0;color:#E8EAF6;font-size:13px;text-align:center}
+.podium .pod-btns .btn:not(.primary){background:#ffffff1f;color:#fff;border-color:#ffffff59}
+.pod-rise{transform-box:fill-box;transform-origin:50% 100%;animation:pod-rise .6s cubic-bezier(.2,1.4,.4,1) both}
+.pod-land{animation:pod-land .55s cubic-bezier(.3,1.5,.5,1) both}
+.pod-hop{animation:pod-hop .55s ease-in-out 16 both}
+.pod-bob{animation:pod-bob .7s ease-in-out 7 both}
+.pc .arm{transform-box:fill-box;transform-origin:50% 4%}
+.pc-win .al{animation:pod-wl .55s ease-in-out 16 both}
+.pc-win .ar{animation:pod-wr .55s ease-in-out 16 both}
+.pc-clap .al{animation:pod-cl .7s ease-in-out 7 both}
+.pc-clap .ar{animation:pod-cr .7s ease-in-out 7 both}
+.pod-spk{opacity:0;transform-box:fill-box;transform-origin:50% 100%;animation:pod-spk .7s ease-out 7}
+.pc .wing,.pc .shd{display:none}
+.pc .lids{animation:blink 4.2s infinite}
+.pc .m-norm,.pc-win .eyes{display:none}
+.pc .m-happy,.pc-win .eyes-happy{display:inline}
+.pod-crown{transform-box:fill-box;animation:pod-crown .8s cubic-bezier(.3,1.6,.5,1) both}
+.pod-rays{transform-box:fill-box;transform-origin:50% 50%;animation:pod-spin 14s linear infinite,pod-fade 1s ease-out 1.2s both}
+.pod-pop{transform-box:fill-box;animation:pod-pop .45s cubic-bezier(.2,1.6,.4,1) both}
+.pod-up{animation:pod-up .5s ease-out both}
+.pod-drop{animation:pod-drop 1.4s ease-in 3s infinite;opacity:0}
+@keyframes pod-rise{from{transform:scaleY(0)}}
+@keyframes pod-land{from{transform:translateY(-70px);opacity:0}}
+@keyframes pod-hop{50%{transform:translateY(-9px)}}
+@keyframes pod-bob{50%{transform:translateY(-2.5px)}}
+@keyframes pod-wl{0%,100%{transform:rotate(126deg)}50%{transform:rotate(152deg)}}
+@keyframes pod-wr{0%,100%{transform:rotate(-126deg)}50%{transform:rotate(-152deg)}}
+@keyframes pod-cl{0%,100%{transform:rotate(0)}50%{transform:rotate(calc(var(--ang) * -1))}}
+@keyframes pod-cr{0%,100%{transform:rotate(0)}50%{transform:rotate(var(--ang))}}
+@keyframes pod-spk{0%,42%{opacity:0;transform:scale(.4)}55%{opacity:1;transform:scale(1)}80%,100%{opacity:0;transform:scale(1.15)}}
+@keyframes pod-crown{from{transform:translateY(-70px) rotate(-25deg);opacity:0}}
+@keyframes pod-spin{to{transform:rotate(360deg)}}
+@keyframes pod-fade{from{opacity:0}}
+@keyframes pod-pop{from{transform:scale(0)}}
+@keyframes pod-up{from{opacity:0;transform:translateY(10px)}}
+@keyframes pod-drop{0%{opacity:0;transform:translateY(-2px)}20%{opacity:1}100%{opacity:0;transform:translateY(5px)}}
+.reduce-fx .pod-rays,.reduce-fx .podium .fw2{display:none}
+.reduce-fx .pod-hop,.reduce-fx .pc-win .al,.reduce-fx .pc-win .ar{animation-iteration-count:3}
+.reduce-fx .pod-bob,.reduce-fx .pc-clap .al,.reduce-fx .pc-clap .ar,.reduce-fx .pod-spk{animation-iteration-count:3}
+@media (prefers-reduced-motion:reduce){.podium,.podium *{animation:none!important}}
 
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:14px;font-weight:600;z-index:20;max-width:calc(100% - 32px)}
 
@@ -1712,9 +1760,9 @@ function spawnAmbient(){
 setTimeout(spawnAmbient, 9000);
 // Fireworks when the game ends.
 let fwRun=0;
-function fireworks(colors,ms=6500){
+function fireworks(colors,ms=6500,canvas){
   if (reduceMotion) return;
-  const cv=$("#fireworks"), wrap=$("#tableWrap"); const id=++fwRun;
+  const cv=canvas||$("#fireworks"), wrap=$("#tableWrap"); const id=++fwRun;
   const W=cv.width=wrap.offsetWidth*Math.min(2,devicePixelRatio||1), H=cv.height=wrap.offsetHeight*Math.min(2,devicePixelRatio||1);
   const ctx=cv.getContext("2d"); cv.hidden=false; const parts=[]; let t0=null, nextBurst=0;
   const burst=()=>{ const x=W*(.15+Math.random()*.7), y=H*(.12+Math.random()*.45), col=colors[Math.floor(Math.random()*colors.length)], n=46;
@@ -1729,6 +1777,107 @@ function fireworks(colors,ms=6500){
     ctx.globalAlpha=1;
     if (el<ms || parts.length) requestAnimationFrame(f); else cv.hidden=true; };
   requestAnimationFrame(f);
+}
+/* ---------- End screen: a 2.5D podium. The winner cheers in a crown, everyone else applauds. ---------- */
+// Arms are drawn only here, so pieces on the board are unchanged. [shoulder x, shoulder y, length, width, kind]
+const POD_ARM={robot:[10,36,16,5,"robot"],frog:[10,40,18,6,"limb"],chick:[12,37,16,7,"wing"],cat:[11,40,17,6,"limb"],owl:[11,37,18,7.5,"wing"],penguin:[13,35,16,6.5,"wing"]};
+// Eye centres and size, for eyebrows, blush and a sweat drop.
+const POD_EYE={robot:[22.5,37.5,27,3.5],frog:[19,41,21,5],chick:[23,37,28,4.6],cat:[21,39,32,4.6],owl:[21,39,27,5.2],penguin:[24,36,25,4]};
+const POD_CROWN={classic:12,robot:2,frog:13,chick:10,cat:15,owl:11,penguin:7};
+const POD_CHEER={robot:"Congratulations. Beep!",frog:"Ribbit! Well played!",chick:"Yay, well done!",cat:"Fine… well played.",owl:"A wise win. Hoo!",penguin:"Cool win!",classic:"Well played!"};
+const podEsc=t=>String(t).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const podShort=(t,n=11)=>{ t=String(t); return t.length>n ? t.slice(0,n-1)+"…" : t; };
+function podCrown(b){
+  return `<path d="M21 ${b}L19.5 ${b-9}L25 ${b-4.5}L30 ${b-12}L35 ${b-4.5}L40.5 ${b-9}L39 ${b}Z" fill="#FFD34D" stroke="#B8860B" stroke-width="1" stroke-linejoin="round"/>
+    <rect x="21" y="${b-2.6}" width="18" height="2.6" fill="#F5B82E"/><circle cx="30" cy="${b-6}" r="1.7" fill="#E8345A"/><circle cx="19.5" cy="${b-9}" r="1.1" fill="#FFF3B0"/><circle cx="40.5" cy="${b-9}" r="1.1" fill="#FFF3B0"/><circle cx="30" cy="${b-12}" r="1.2" fill="#FFF3B0"/>`;
+}
+function podFace(ch,role){
+  const e=POD_EYE[ch]; if (!e) return "";
+  const [x1,x2,y,r]=e, by=y-r-3, col=ch==="robot"?"#8FF0FF":INK; let o="";
+  if (role==="last"){
+    o+=`<path d="M${x1-4} ${by+.5}L${x1+4} ${by-2.5}M${x2+4} ${by+.5}L${x2-4} ${by-2.5}" stroke="${col}" stroke-width="1.7" stroke-linecap="round"/>`;
+    o+=`<path class="pod-drop" d="M${x2+r+3} ${y-r-5}q3 4.5 0 6.5q-3 -2 0 -6.5z" fill="#8FD3FF" stroke="#3A8FC0" stroke-width=".5"/>`;
+  } else o+=`<path d="M${x1-4} ${by+1}q4 -3.5 8 0M${x2-4} ${by+1}q4 -3.5 8 0" stroke="${col}" stroke-width="1.7" fill="none" stroke-linecap="round"/>`;
+  if (ch!=="robot" && ch!=="frog") o+=`<ellipse cx="${x1-2.5}" cy="${y+r+3.2}" rx="2.8" ry="1.8" fill="#F4A3B4" opacity=".7"/><ellipse cx="${x2+2.5}" cy="${y+r+3.2}" rx="2.8" ry="1.8" fill="#F4A3B4" opacity=".7"/>`;
+  return o;
+}
+function podArms(ch,seat,role,d){
+  const a=POD_ARM[ch]; if (!a) return "";
+  const [sx,sy,L,w,kind]=a, [m,l,dk]=PAL[seat], hr=kind==="wing"?w/2:w*.62;
+  // Swing just far enough for the two hands to meet in front of the tummy.
+  const ang=Math.asin(Math.min(.97,(30-sx-hr-.3)/L))*180/Math.PI;
+  const shape= kind==="wing" ? `<ellipse cx="0" cy="${L/2}" rx="${w/2}" ry="${L/2}" fill="${dk}"/>`
+    : kind==="robot" ? `<rect x="${-w/2}" y="0" width="${w}" height="${L-2}" rx="${w/2}" fill="${dk}"/><circle cx="0" cy="${L-1.5}" r="${hr+.6}" fill="#C9D1E0" stroke="${dk}" stroke-width="1"/>`
+    : `<rect x="${-w/2}" y="0" width="${w}" height="${L-2}" rx="${w/2}" fill="${m}" stroke="${dk}" stroke-width="1"/><circle cx="0" cy="${L-1.5}" r="${hr+.4}" fill="${l}" stroke="${dk}" stroke-width="1"/>`;
+  const arm=(x,c)=>`<g transform="translate(${x} ${sy})"><g class="arm ${c}" style="--ang:${ang.toFixed(1)}deg;animation-delay:${d}s">${shape}</g></g>`;
+  let o=arm(sx,"al")+arm(60-sx,"ar");
+  if (role!=="win"){ const hy=sy+L*Math.cos(ang*Math.PI/180);
+    o+=`<g transform="translate(30 ${(hy-4).toFixed(1)})"><g class="pod-spk" style="animation-delay:${d}s" stroke="#FFD34D" stroke-width="1.8" stroke-linecap="round" fill="none"><path d="M-6 -1l-4 -3M0 -4v-5M6 -1l4 -3"/></g></g>`; }
+  return o;
+}
+// One character, standing with its feet at (cx, footY) in the scene.
+function podChar(ch,seat,role,cx,footY,land,act,size=94){
+  const vb=[-16,-26,92,86], h=size*vb[3]/vb[2], x=cx-size/2, y=footY-h*((56-vb[1])/vb[3]);
+  const crown= role==="win" ? `<g class="pod-crown" style="animation-delay:${(act-.5).toFixed(2)}s">${podCrown(POD_CROWN[ch]??10)}</g>` : "";
+  const body=(CH[ch]||CH.classic)(seat,"idle")+podFace(ch,role)+podArms(ch,seat,role,act)+crown;
+  const cls="pc "+(role==="win"?"pc-win":"pc-clap")+(role==="last"?" pc-last":"");
+  return `<svg x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${size}" height="${h.toFixed(1)}" viewBox="${vb.join(" ")}" overflow="visible" class="${cls}">
+    <g class="pod-land" style="animation-delay:${land}s"><g class="${role==="win"?"pod-hop":"pod-bob"}" style="animation-delay:${act}s">${body}</g></g></svg>`;
+}
+function podBlock(x,top,h,seat,label,delay){
+  const [m,l,d]=PAL[seat], w=76, dx=10, dy=-10;
+  return `<g class="pod-rise" style="animation-delay:${delay}s">
+    <polygon points="${x},${top} ${x+w},${top} ${x+w+dx},${top+dy} ${x+dx},${top+dy}" fill="${l}"/>
+    <polygon points="${x+w},${top} ${x+w+dx},${top+dy} ${x+w+dx},${top+h+dy} ${x+w},${top+h}" fill="${d}"/>
+    <rect x="${x}" y="${top}" width="${w}" height="${h}" fill="${m}"/><rect x="${x}" y="${top}" width="${w}" height="4" fill="#fff" opacity=".28"/>
+    <text x="${x+w/2}" y="${top+Math.min(h-9,38)}" text-anchor="middle" font-size="${h>40?26:20}" font-weight="800" fill="#fff" style="font-family:var(--font-display)">${label}</text></g>`;
+}
+function podBubble(x,y,text,tailX,tailY,col,delay,leftOf=false){
+  const w=Math.round(text.length*6.6+22), h=24; if (leftOf) x=tailX-w+18; x=Math.max(4,Math.min(356-w,x));
+  const tx=Math.max(x+10,Math.min(x+w-10,tailX));
+  return `<g class="pod-pop" style="animation-delay:${delay}s;transform-origin:${tx-x}px ${h}px"><g transform="translate(${x} ${y})">
+    <path d="M${tx-x-6} ${h-2}L${tailX-x} ${tailY-y}L${tx-x+6} ${h-2}z" fill="#fff"/><rect width="${w}" height="${h}" rx="12" fill="#fff"/>
+    <text x="${w/2}" y="16.5" text-anchor="middle" font-size="12.5" font-weight="800" fill="${col}" style="font-family:var(--font-display)">${podEsc(text)}</text></g></g>`;
+}
+function podiumScene(s){
+  const W=s.winners, n=W.length, G0=262, H=[84,56,36], bw=76, gap=4;
+  const slots= n>=3 ? [1,0,2] : [1,0];
+  const total=slots.length*bw+(slots.length-1)*gap+10, x0=(360-total)/2;
+  const pos={}; slots.forEach((place,k)=>{ pos[place]={x:x0+k*(bw+gap), h:H[place]}; });
+  const out=[], chars=[], last=n-1, ACT=[1.6,2.2,2.35,2.5], LAND=[.7,.9,1.1,1.3];
+  const w0=pos[0], wcx=w0.x+bw/2+4, wTop=G0-w0.h;
+  let rays=""; for (let i=0;i<12;i++) rays+=`<polygon points="0,0 -9,-130 9,-130" fill="#FFE27A" opacity=".16" transform="rotate(${i*30})"/>`;
+  out.push(`<g transform="translate(${wcx} ${wTop-30})"><g class="pod-rays">${rays}</g></g>`);
+  out.push(`<ellipse cx="180" cy="${G0+3}" rx="172" ry="8" fill="#000" opacity=".35"/>`);
+  [1,0,2].forEach(pl=>{ if (pos[pl]) out.push(podBlock(pos[pl].x,G0-pos[pl].h,pos[pl].h,W[pl],String(pl+1),[.1,.3,.5][pl])); });
+  const labels=[];
+  W.forEach((seat,pl)=>{
+    const ch=charOf(s,seat), role= pl===0 ? "win" : pl===last ? "last" : "clap";
+    let cx, foot;
+    if (pos[pl]){ cx=pos[pl].x+bw/2+4; foot=G0-pos[pl].h-5; }
+    else { cx=Math.max(30,x0-30); foot=G0; }
+    chars.push(podChar(ch,seat,role,cx,foot,LAND[pl],ACT[pl]));
+    labels.push(`<text class="pod-up" style="animation-delay:${(1.3+pl*.2).toFixed(1)}s;font-family:var(--font-display)" x="${cx-4}" y="${G0+22}" text-anchor="middle" font-size="13" font-weight="800" fill="#E8EAF6">${podEsc(podShort(seatName(seat)))}</text>`);
+    pos[pl]=pos[pl]||{}; pos[pl].cx=cx; pos[pl].foot=foot; pos[pl].ch=ch;
+  });
+  out.push(...chars, ...labels);
+  if (mascotsOn()){
+    const ch=pos[0].ch, opts=(LINES[ch]||LINES.classic).win, line=opts[Math.floor(seeded((s.rollId||0)*7+W[0])*opts.length)];
+    const hx=pos[0].cx, hy=pos[0].foot-58;
+    out.push(podBubble(hx+26,hy-30,line,hx+18,hy+10,PAL[W[0]][2],2.0));
+    const c2=pos[1].ch, ax=pos[1].cx, ay=pos[1].foot-52;
+    out.push(podBubble(0,ay-34,POD_CHEER[c2]||POD_CHEER.classic,ax-4,ay+2,PAL[W[1]][2],2.6,true));
+  }
+  const ranks=W.map((seat,i)=>`${["1st","2nd","3rd","4th"][i]} ${seatName(seat)}`).join(", ");
+  return `<svg class="pod-scene" viewBox="0 0 360 290" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Final ranking: ${podEsc(ranks)}">${out.join("")}</svg>`;
+}
+// A crowd clapping: lots of short noise slaps that swell, then thin out.
+function applause(ms=2800){
+  if (!audio()) return; const t0=Date.now();
+  const step=()=>{ const el=Date.now()-t0; if (el>ms || !G.state || G.state.status!=="done") return;
+    const k=Math.sin(Math.PI*Math.min(1,el/ms)); clack(.4+Math.random()*1.4*k);
+    setTimeout(step, 28+Math.random()*70/(.35+k)); };
+  step();
 }
 // Emoji reactions that float up from a player's corner.
 const REACTS=["😂","😮","😤","👏","❤️","😎"];
@@ -2146,12 +2295,11 @@ function handleDone(s){
   const key=(G.code||"local")+":"+(s.rollId||0)+":"+s.winners.join("");
   if (G.doneKey!==key){
     G.doneKey=key; G.doneAt=Date.now(); board.classList.add("party");
-    mascotEvent("win", s.winners[0], {key:"win"});
-    fireworks([PAL[s.winners[0]][1], PAL[s.winners[0]][0], "#FFD34D", "#ffffff", ...(s.winners[1]!=null?[PAL[s.winners[1]][1]]:[])]);
     if (G.mode==="local") lsSet("ludo.localWins", s.wins||{});
-    setTimeout(()=>{ if (G.doneKey===key && G.state){ board.classList.remove("party"); route(); } }, 3600);
+    // A short beat on the board (the last piece lands, pieces dance), then the podium.
+    setTimeout(()=>{ if (G.doneKey===key && G.state){ board.classList.remove("party"); route(); } }, 1600);
   }
-  return Date.now()-G.doneAt >= 3500;
+  return Date.now()-G.doneAt >= 1500;
 }
 // Rebuild a part of the screen only when what it shows has changed.
 function same(key,val){ const v=JSON.stringify(val); G._sig=G._sig||{}; if (G._sig[key]===v) return true; G._sig[key]=v; return false; }
@@ -2234,31 +2382,34 @@ function renderGame(){
     }
   }
   }
-  // game over
+  // game over: the podium
   const over=$("#over");
   if (s.status==="done" && showOver){
-    over.hidden=false;
+    over.hidden=false; over.classList.add("podium");
     if (!same("over", [s.winners, names, G.mode, s.host===G.me])){ over.innerHTML="";
-    const p=document.createElement("div"); p.className="panel";
-    const h=document.createElement("h2"); h.textContent="Final standings";
-    const ol=document.createElement("ol");
-    s.winners.forEach((w,i)=>{ const li=document.createElement("li"); li.className="c-"+COLORS[w];
-      const em=document.createElement("em"); em.textContent=["1st","2nd","3rd","4th"][i];
-      const nm=document.createElement("span"); nm.textContent=seatName(w);
-      li.append(em,Object.assign(document.createElement("span"),{className:"dot"}),nm); ol.appendChild(li); });
-    p.append(h,ol);
-    const row=document.createElement("div"); row.className="row"; row.style.justifyContent="center";
+    const head=document.createElement("div"); head.className="pod-head";
+    const h=document.createElement("h2"); const wn=seatName(s.winners[0]); h.textContent=`${wn} ${wn==="You"?"win":"wins"}!`;
+    const sub=document.createElement("p"); sub.textContent="Final ranking"; head.append(h,sub);
+    const cv=document.createElement("canvas"); cv.className="fw2"; cv.setAttribute("aria-hidden","true");
+    over.append(cv); over.insertAdjacentHTML("beforeend", podiumScene(s)); over.append(head);
+    const row=document.createElement("div"); row.className="pod-btns";
     if (G.mode==="local" || s.host===G.me){
-      const again=document.createElement("button"); again.className="btn primary"; again.type="button"; again.textContent= G.mode==="local" ? "Play again with same players" : "Back to lobby";
+      const again=document.createElement("button"); again.className="btn primary"; again.type="button"; again.textContent= G.mode==="local" ? "Play again" : "Back to lobby";
       again.onclick=()=>{
         if (G.mode==="local"){ startLocal(setupFromState(G.state)); }
         else safeLocked(st=>{ st.status="lobby"; st.tokens=freshTokens(); st.winners=[]; st.log=[]; st.rolled=false; st.dice=null; return st; });
       };
       row.appendChild(again);
-    } else { const t=document.createElement("p"); t.className="empty"; t.textContent="The host can start a rematch."; p.appendChild(t); }
+    } else { const t=document.createElement("p"); t.textContent="The host can start a rematch."; row.appendChild(t); }
     const home=document.createElement("button"); home.className="btn"; home.type="button"; home.textContent="Home"; home.onclick=goHome;
-    row.appendChild(home); p.appendChild(row); over.appendChild(p);
-  }} else { over.hidden=true; G._sig.over=null; }
+    row.appendChild(home); over.appendChild(row);
+    if (G.podFx!==G.doneKey){ G.podFx=G.doneKey;
+      if (!document.body.classList.contains("reduce-fx")){
+        const w=s.winners[0]; fireworks([PAL[w][1], PAL[w][0], "#FFD34D", "#ffffff", "#FFE27A"], 9000, cv);
+      }
+      setTimeout(()=>applause(document.body.classList.contains("reduce-fx")?1600:3000), 2200);
+    }
+  }} else { over.hidden=true; over.classList.remove("podium"); G._sig.over=null; }
 
   maybeBot(); maybeAuto();
 }
