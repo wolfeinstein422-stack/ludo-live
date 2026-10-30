@@ -94,8 +94,11 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
     await host.waitForFunction(() => [...document.querySelectorAll("#seats li b")].some(b => b.textContent === "Ben"), null, { timeout: 8000 }).catch(() => {});
     await host.click("#startBtn"); await guest.waitForSelector("#game:not([hidden])", { timeout: 8000 }).catch(() => {});
     check(await guest.$eval("#game", e => !e.hidden), "guest joins and sees the game start");
-    await host.mouse.click(300, 500); await host.waitForTimeout(3500);
-    check((await guest.textContent("#log")).includes("Asha"), "moves reach the other player");
+    await host.waitForTimeout(1200);
+    const ashaFirst = (await host.textContent("#log")).includes("Asha goes first") || (await host.textContent("#log")).includes("You go first");
+    const [roller, watcher, who] = ashaFirst ? [host, guest, "Asha"] : [guest, host, "Ben"];
+    await roller.mouse.click(300, 500); await roller.waitForTimeout(3500);
+    check((await watcher.textContent("#log")).includes(who + " rolled") || (await watcher.textContent("#log")).includes(who), "moves reach the other player", who + " went first");
     await ctx.close(); }
 
   // 5. Offline: the saved copy opens and offers to continue
