@@ -26,11 +26,20 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
   const open = async (ctx, init) => { const p = await ctx.newPage(); p.on("pageerror", e => errors.push(e.message));
     if (init) await p.addInitScript(init.fn, init.arg);
     await p.goto(URL, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(900); return p; };
+  // Start screen → Pass and play → who's playing → names → characters → start (then the first-player spin)
+  const local = async (p, kinds, names = {}, opts = {}) => {
+    await p.click("#modeLocal");
+    for (const [i, k] of kinds.entries()) await p.selectOption("#local-" + i, k);
+    await p.click("#stepNext");
+    for (const [i, n] of Object.entries(names)) await p.fill("#name-" + i, n);
+    await p.click("#stepNext");
+    if (opts.pass) await p.check("#passScreen");
+    await p.click("#localBtn"); await p.waitForTimeout(opts.wait ?? 3800); };
 
   // 1. Pass and play with bots runs on its own
   { const ctx = await newCtx(), p = await open(ctx);
-    for (const i of [0,1,2,3]) await p.selectOption("#local-" + i, "bot");
-    await p.click("#localBtn"); await p.waitForTimeout(12000);
+    check(await p.$eval("#home", e => !e.hidden) && await p.$eval("#local", e => e.hidden), "starts on the choose-a-mode screen");
+    await local(p, ["bot","bot","bot","bot"], {}, { wait: 12000 });
     const lines = await p.$$eval("#log li", e => e.length);
     check(lines >= 3, "bots play a Pass and play game", lines + " log lines");
     check(await p.$eval("#resumeCard", e => true), "game is saved for later");
@@ -38,10 +47,30 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
 
   // 2. Tapping the board rolls the die
   { const ctx = await newCtx(), p = await open(ctx);
-    await p.selectOption("#local-1", "off"); await p.selectOption("#local-3", "off"); await p.selectOption("#local-2", "human");
-    await p.click("#localBtn"); await p.waitForTimeout(500);
+    await local(p, ["human","off","human","off"], { 0: "Asha", 2: "Ben" });
+    const log0 = await p.textContent("#log");
+    check(/(Asha|Ben) goes first/.test(log0), "a random first player is picked and logged", log0.slice(0, 80));
+    check(/(Asha|Ben)'s turn/.test(await p.textContent("#turnPanel")), "turn banner shows the player's name");
+    check((await p.textContent("#players")).includes("Asha") && (await p.textContent("#players")).includes("Ben"), "players list shows names");
     await p.mouse.click(300, 500); await p.waitForTimeout(2600);
     check((await p.textContent("#log")).includes("rolled") || (await p.textContent("#log")).includes("brought"), "tapping the board rolls");
+    await p.click("#homeBtn").catch(() => {}); await p.waitForTimeout(400);
+    if (await p.$eval("#home", e => e.hidden)) { await p.goto(URL, { waitUntil: "domcontentloaded" }); await p.waitForTimeout(900); }
+    check(await p.$eval("#quickRow", e => !e.hidden) && (await p.textContent("#quickText")).includes("Asha"), "quick start remembers the players");
+    await p.click("#modeLocal"); await p.click("#stepNext");
+    check(await p.inputValue("#name-0") === "Asha", "names are remembered");
+    await p.fill("#name-2", "asha"); await p.click("#stepNext");
+    check((await p.textContent("#charCfg")).includes("asha 2"), "duplicate names get a number");
+    await ctx.close(); }
+
+  // 2b. Pass-the-device screen and settings links
+  { const ctx = await newCtx(), p = await open(ctx);
+    await p.click("#prefsLink"); check(await p.$eval("#prefs", e => !e.hidden), "sound and effects opens from the start screen");
+    await p.click("#prefsDone");
+    await local(p, ["human","human","off","off"], { 0: "Cleo", 1: "Dev" }, { pass: true });
+    check(await p.$eval("#passDev", e => !e.hidden), "pass-the-device screen shows when turned on");
+    await p.click("#passGo"); await p.waitForTimeout(300);
+    check(await p.$eval("#passDev", e => e.hidden), "it goes away when the player is ready");
     await ctx.close(); }
 
   // 3. A capture only scares the victim once it's chosen, and is logged
@@ -54,6 +83,7 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
 
   // 4. Two players online
   { const ctx = await newCtx(), host = await open(ctx), guest = await open(ctx);
+    await host.click("#modeOnline"); await guest.click("#modeOnline");
     await host.fill("#nick", "Asha"); await guest.fill("#nick", "Ben");
     await host.click("#createBtn"); await host.waitForSelector("#lobby:not([hidden])", { timeout: 8000 });
     const code = (await host.textContent("#lobbyCode")).trim();
@@ -70,8 +100,7 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
   { const ctx = await newCtx(), p = await open(ctx);
     const sw = await p.evaluate(() => navigator.serviceWorker ? navigator.serviceWorker.ready.then(() => true) : false);
     await p.reload({ waitUntil: "domcontentloaded" }); await p.waitForTimeout(800);
-    await p.selectOption("#local-1", "off"); await p.selectOption("#local-3", "off"); await p.selectOption("#local-2", "bot");
-    await p.click("#localBtn"); await p.waitForTimeout(800); await p.mouse.click(300, 500); await p.waitForTimeout(3000);
+    await local(p, ["human","off","bot","off"]); await p.mouse.click(300, 500); await p.waitForTimeout(3000);
     await ctx.setOffline(true); await p.reload({ waitUntil: "domcontentloaded" }); await p.waitForTimeout(1200);
     check(sw && (await p.title()) === "Ludo Live", "page opens offline");
     check(await p.$eval("#resumeCard", e => !e.hidden), "offline page offers to continue the saved game");

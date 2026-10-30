@@ -611,6 +611,48 @@ body.can-roll .mat{cursor:pointer}
 @media (prefers-reduced-motion:reduce){
   .token,.die,.token *,.mini *,.scene *,.cell,.cell::after,.yard::after,.board::after,.amb *{transition:none!important;animation:none!important}
 }
+
+/* start screen, setup steps, modals */
+.modes{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin:18px 0}
+.mode{display:flex;gap:16px;align-items:center;text-align:left;padding:20px;border-radius:18px;border:2px solid var(--line);background:var(--surface);color:inherit;cursor:pointer;font:inherit;transition:transform .15s,box-shadow .15s}
+.mode:hover,.mode:focus-visible{transform:translateY(-2px);box-shadow:0 8px 24px #0002}
+.mode-text{display:grid;gap:6px}
+.mode b{font:800 22px/1.1 var(--font-display);color:var(--ink)}
+.mode-text span{color:var(--muted);line-height:1.4}
+.mode{border-color:color-mix(in srgb,var(--pc) 35%,var(--line))}
+.mode-art{flex:none;width:58px;height:58px;border-radius:14px;background:var(--pc);position:relative;box-shadow:inset 0 -4px 0 #0002}
+.mode-art i{position:absolute;width:16px;height:16px;border-radius:50%;background:#fff;box-shadow:0 2px 0 #0003}
+.mode-art i:first-child{left:11px;top:11px}.mode-art i:last-child{right:11px;bottom:11px}
+#modeOnline .mode-art i:first-child{left:21px;top:8px;width:16px}#modeOnline .mode-art i:last-child{left:21px;right:auto;bottom:8px}
+.quick{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;padding:12px 16px;border-radius:14px;background:var(--surface);border:1px dashed var(--line);margin-bottom:14px}
+.quick small{color:var(--muted);display:block}
+.homelinks{display:flex;gap:16px;flex-wrap:wrap;margin:6px 0 14px}
+.linkbtn{background:none;border:0;padding:4px 0;color:inherit;font:600 15px var(--font-body,inherit);text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.setup{max-width:560px;margin:0 auto;display:grid;gap:16px}
+.setup-head{display:grid;grid-template-columns:1fr auto;align-items:end;gap:4px 12px}
+.setup-head .eyebrow{grid-column:1/-1}
+.setup-head .dots{padding-bottom:8px}
+.setup-head h2{margin:0;font:800 26px/1.1 var(--font-display)}
+.dots{display:flex;gap:6px}.dots i{width:10px;height:10px;border-radius:50%;background:var(--line)}.dots i.on{background:var(--ink)}
+.step{display:grid;gap:12px}
+.hint{color:var(--muted);margin:0}
+.namecfg{display:grid;gap:10px}
+.namerow{display:flex;align-items:center;gap:10px}
+.namerow .dot{width:14px;height:14px;border-radius:50%;background:var(--pc);flex:none}
+.namerow .input{flex:1;min-width:0;letter-spacing:.01em;text-transform:none;font:600 17px var(--font-body)}
+.botname{color:var(--muted);font-weight:600;padding:10px 0}
+.check{display:flex;gap:10px;align-items:flex-start;cursor:pointer}
+.check input{width:20px;height:20px;margin-top:2px;flex:none}
+.setup-foot{display:flex;justify-content:space-between;gap:10px}
+.cards.two{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.modal{position:fixed;inset:0;z-index:60;display:grid;place-items:center;background:#0007;padding:16px}
+.modal-box{background:var(--surface);color:var(--ink);border-radius:18px;padding:20px;max-width:360px;width:100%;display:grid;gap:12px;box-shadow:0 20px 50px #0005}
+.modal-box h2{margin:0;font:800 22px var(--font-display)}
+.spinrow{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.spinchip{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:999px;background:var(--surface);color:var(--ink);border:2px solid transparent;font-weight:700;transition:transform .08s,background .08s}
+.spinchip.on{background:var(--pc);color:#fff;border-color:#fff;transform:scale(1.12)}
+.spinchip svg{width:22px;height:22px}
+.passdev h2{font:800 28px/1.1 var(--font-display)}
 </style>
 
 <div id="setting" hidden aria-hidden="true"><div id="settingScene"></div><div class="dapple"></div><div class="tod-warm"></div><div class="tod-night"></div><div class="tod-stars"></div><div class="celestial"><i class="sun"></i><i class="moon"></i></div><div class="night-glow"></div><div class="fall"></div></div>
@@ -625,48 +667,33 @@ body.can-roll .mat{cursor:pointer}
     <div class="hero">
       <div>
         <h1>Roll a <span>six</span>.<br>Race home.</h1>
-        <p>Classic four-colour Ludo you play in the browser with friends. Start a table, share the code, and everyone's moves show up live.</p>
+        <p>Classic four-colour Ludo with characters, bots and a living board. Play on one device, or online with friends.</p>
         <button class="btn" id="installBtn" type="button" hidden style="margin-top:16px">Install app</button>
       </div>
       <div class="hero-board" aria-hidden="true"><div class="table"><div class="board" id="heroBoard"></div></div></div>
     </div>
 
-    <div id="onlineNote" class="note" hidden></div>
-    <div class="panel nickrow" id="nickRow" hidden><label for="nick">Your name for online tables</label><input class="input" id="nick" maxlength="16" autocomplete="nickname"></div>
-
     <div class="card resume" id="resumeCard" hidden>
       <div class="resume-info"><span class="eyebrow">Saved on this device</span><h2>Continue your last game?</h2><p id="resumeText"></p><div class="rminis" id="resumeMinis"></div></div>
       <div class="row"><button class="btn primary" id="resumeBtn" type="button">Continue game</button><button class="btn" id="discardBtn" type="button">Start a new one</button></div>
     </div>
-    <div class="cards" style="margin-top:16px">
-      <div class="card">
-        <span class="eyebrow">Online</span>
-        <h2>Start a table</h2>
-        <p>You get a 5-letter code. Friends enter it here to take a seat. Fill any empty seats with bots.</p>
-        <div style="flex:1"></div>
-        <button class="btn primary" id="createBtn" type="button">Create table</button>
-      </div>
-      <div class="card">
-        <span class="eyebrow">Online</span>
-        <h2>Join a table</h2>
-        <form class="row" id="joinForm">
-          <input class="input" id="joinCode" maxlength="5" placeholder="Table code" autocomplete="off" aria-label="Table code">
-          <button class="btn primary" id="joinBtn" type="submit">Join</button>
-        </form>
-        <div class="row" style="justify-content:space-between"><span class="eyebrow">Open tables</span><button class="link" id="refreshTables" type="button">Refresh</button></div>
-        <ul class="tables" id="tables"><li class="empty">Looking for open tables…</li></ul>
-      </div>
-      <div class="card">
-        <span class="eyebrow">This device</span>
-        <h2>Pass and play</h2>
-        <div class="seatcfg" id="localCfg"></div>
-        <label class="setpick" for="localSetting"><span>Setting</span><select id="localSetting"></select></label>
-        <label class="setpick" for="localSkin"><span>Board</span><select id="localSkin"></select></label>
-        <button class="btn" id="localBtn" type="button">Start game</button>
-      </div>
-    </div>
 
-    <details class="rules">
+    <div class="modes">
+      <button class="mode c-red" id="modeLocal" type="button">
+        <span class="mode-art" aria-hidden="true"><i></i><i></i></span>
+        <span class="mode-text"><b>Pass and play</b><span>Take turns on this device, with friends or bots. Works offline.</span></span>
+      </button>
+      <button class="mode c-blue" id="modeOnline" type="button">
+        <span class="mode-art online" aria-hidden="true"><i></i><i></i></span>
+        <span class="mode-text"><b>Online game</b><span>Everyone plays on their own device. Share a 5-letter table code.</span></span>
+      </button>
+    </div>
+    <div class="quick" id="quickRow" hidden>
+      <button class="btn" id="quickBtn" type="button">Play again with same players</button><span id="quickText"></span>
+    </div>
+    <div class="homelinks"><button class="link" id="rulesLink" type="button">How to play</button><button class="link" id="prefsLink" type="button">Sound and effects</button></div>
+
+    <details class="rules" id="rules">
       <summary>How the game is played</summary>
       <ul>
         <li>Roll a 6 to bring a token out onto your start square.</li>
@@ -676,10 +703,82 @@ body.can-roll .mat{cursor:pointer}
         <li>Go once around the board, then up your coloured lane to the centre.</li>
         <li>You need the exact roll to reach the centre. Getting a token home earns another roll.</li>
         <li>First to bring all four tokens home wins. Play continues for the other places.</li>
-        <li>When only one move is possible, it's made for you.</li>
+        <li>When only one move is possible, it's made for you. Tap the board or press Space to roll.</li>
       </ul>
     </details>
   </section>
+
+  <!-- PASS AND PLAY SETUP -->
+  <section id="local" hidden>
+    <div class="setup">
+      <div class="setup-head">
+        <span class="eyebrow">Pass and play</span>
+        <h2 id="stepTitle">Who's playing?</h2>
+        <div class="dots" id="stepDots" aria-hidden="true"><i></i><i></i><i></i></div>
+      </div>
+      <div class="step" id="step1">
+        <p class="hint">Choose a person, a bot or nobody for each colour. You need at least two.</p>
+        <div class="seatcfg" id="localCfg"></div>
+      </div>
+      <div class="step" id="step2" hidden>
+        <p class="hint" id="nameHint">Type each player's name. Up to 16 letters.</p>
+        <div class="namecfg" id="nameCfg"></div>
+        <button class="btn small" id="shuffleBtn" type="button">Shuffle seats</button>
+      </div>
+      <div class="step" id="step3" hidden>
+        <p class="hint">Pick each player's character, then where to play.</p>
+        <div class="seatcfg" id="charCfg"></div>
+        <label class="setpick" for="localSetting"><span>Setting</span><select id="localSetting"></select></label>
+        <label class="setpick" for="localSkin"><span>Board</span><select id="localSkin"></select></label>
+        <label class="check" for="passScreen"><input type="checkbox" id="passScreen"><span>Show "pass the device" between players</span></label>
+      </div>
+      <div class="setup-foot">
+        <button class="btn" id="stepPrev" type="button">Back</button>
+        <button class="btn primary" id="stepNext" type="button">Next</button>
+        <button class="btn primary" id="localBtn" type="button" hidden>Start game</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ONLINE -->
+  <section id="onlineHome" hidden>
+    <div class="setup wide">
+      <div class="setup-head"><span class="eyebrow">Online game</span><h2>Play with friends</h2></div>
+      <div id="onlineNote" class="note" hidden></div>
+      <div class="panel nickrow" id="nickRow" hidden><label for="nick">Your name</label><input class="input" id="nick" maxlength="16" autocomplete="nickname"></div>
+      <div class="cards two">
+        <div class="card">
+          <span class="eyebrow">New table</span>
+          <h2>Start a table</h2>
+          <p>You get a 5-letter code. Friends enter it to take a seat. Fill any empty seats with bots.</p>
+          <div style="flex:1"></div>
+          <button class="btn primary" id="createBtn" type="button">Create table</button>
+        </div>
+        <div class="card">
+          <span class="eyebrow">Have a code?</span>
+          <h2>Join a table</h2>
+          <form class="row" id="joinForm">
+            <input class="input" id="joinCode" maxlength="5" placeholder="Table code" autocomplete="off" aria-label="Table code">
+            <button class="btn primary" id="joinBtn" type="submit">Join</button>
+          </form>
+          <div class="row" style="justify-content:space-between"><span class="eyebrow">Open tables</span><button class="link" id="refreshTables" type="button">Refresh</button></div>
+          <ul class="tables" id="tables"><li class="empty">Looking for open tables…</li></ul>
+        </div>
+      </div>
+      <div class="setup-foot"><button class="btn" id="onlineBack" type="button">Back</button></div>
+    </div>
+  </section>
+
+  <!-- SOUND AND EFFECTS -->
+  <div class="modal" id="prefs" hidden role="dialog" aria-modal="true" aria-labelledby="prefsTitle">
+    <div class="panel modal-box">
+      <h2 id="prefsTitle">Sound and effects</h2>
+      <label class="check" for="prefSound"><input type="checkbox" id="prefSound"><span>Sound</span></label>
+      <label class="check" for="prefMascots"><input type="checkbox" id="prefMascots"><span>Mascots</span></label>
+      <label class="check" for="prefFx"><input type="checkbox" id="prefFx"><span>Full effects (turn off to keep the scenery still)</span></label>
+      <div class="row" style="justify-content:flex-end"><button class="btn primary" id="prefsDone" type="button">Done</button></div>
+    </div>
+  </div>
 
   <!-- LOBBY -->
   <section id="lobby" hidden>
@@ -709,6 +808,8 @@ body.can-roll .mat{cursor:pointer}
         <div id="boardLight"></div>
         <canvas class="fw" id="fireworks" hidden></canvas>
         <div class="over" id="over" hidden></div>
+        <div class="over spin" id="spin" hidden><div class="panel"><b id="spinText">Who goes first?</b><div class="spinrow" id="spinRow"></div></div></div>
+        <div class="over passdev" id="passDev" hidden><div class="panel"><span class="eyebrow">Pass the device</span><h2 id="passName"></h2><p>Hand the device over, then tap below.</p><button class="btn primary" id="passGo" type="button">I'm ready</button></div></div>
       </div></div>
       <aside class="rail">
         <div class="panel turn" id="turnPanel">
@@ -783,11 +884,11 @@ function nextTurn(s){
   s.rolled=false; s.sixes=0;
 }
 function freshTokens(){ return [[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]]; }
-function startPlay(s){
+function startPlay(s,first){
   s.status="playing"; s.tokens=freshTokens(); s.winners=[]; s.log=[]; s.dice=null; s.diceBy=null;
   s.rolled=false; s.sixes=0; s.lastMove=null; s.dry=[0,0,0,0];
-  s.turn = activeSeats(s)[0];
-  addLog(s,{k:"start"});
+  const act=activeSeats(s); s.turn = act.includes(first) ? first : act[0];
+  addLog(s,{k:"start"}); if (act.includes(first)) addLog(s,{k:"first",c:first});
   return s;
 }
 /* ---------- Dice: random, with two quiet helpers ----------
@@ -867,7 +968,7 @@ function doMove(s0,t){
   if (to===56 && s.tokens[seat].every(p=>p===56)){ s.winners.push(seat); addLog(s,{k:"place",c:seat,n:s.winners.length}); }
   const left = activeSeats(s).filter(i=>!s.winners.includes(i));
   if (left.length<=1){ if (left.length) s.winners.push(left[0]); s.status="done"; s.rolled=false; addLog(s,{k:"over"});
-    s.wins={...(s.wins||{})}; const w0=s.winners[0], wk=s.seats[w0].uid||("seat"+w0); s.wins[wk]=(s.wins[wk]||0)+1; return s; }
+    s.wins={...(s.wins||{})}; const w0=s.winners[0], sw0=s.seats[w0], wk=sw0.uid || (sw0.kind==="human" && sw0.name ? "name:"+sw0.name.toLowerCase() : "seat"+w0); s.wins[wk]=(s.wins[wk]||0)+1; return s; }
   const extra = (d===6 || caps.length>0 || to===56) && !s.winners.includes(seat);
   if (extra) s.rolled=false; else nextTurn(s);
   return s;
@@ -1042,13 +1143,13 @@ let writeChain = Promise.resolve();
 const shown = {}, hopping = {}, animId = {};
 let botRev=-1, autoRev=-1, botTimer=null;
 
-function show(id){ ["home","lobby","game"].forEach(x => $("#"+x).hidden = x!==id); if (id==="home") applySetting(null); }
+function show(id){ ["home","local","onlineHome","lobby","game"].forEach(x => $("#"+x).hidden = x!==id); if (["home","local","onlineHome"].includes(id)) applySetting(null); window.scrollTo(0,0); }
 let toastT=null;
 function toast(msg){ const t=$("#toast"); t.textContent=msg; t.hidden=false; clearTimeout(toastT); toastT=setTimeout(()=>t.hidden=true, 3200); }
 function seatName(i, s=G.state){
   const seat=s.seats[i];
   if (seat.kind==="bot") return NAMES[i]+" bot";
-  if (G.mode==="local") return NAMES[i];
+  if (G.mode==="local") return seat.name || NAMES[i];
   if (!seat.uid) return "Open seat";
   if (seat.uid===G.me) return "You";
   return G.names[seat.uid] || NAMES[i];
@@ -1085,7 +1186,7 @@ function renderResume(){
   $("#resumeText").textContent=`${seats.length} players · ${home} of ${seats.length*4} pieces home · ${SETTINGS[settingOf(s)]}, ${SKINS[skinOf(s)]} · saved ${ago(sv.at)}`;
   const m=$("#resumeMinis"); m.innerHTML="";
   seats.forEach(i=>{ const chip=document.createElement("span"); chip.className="rchip c-"+COLORS[i]+(i===s.turn?" now":"");
-    chip.append(miniIcon(charOf(s,i),i), document.createTextNode(s.seats[i].kind==="bot" ? NAMES[i]+" bot" : NAMES[i])); m.appendChild(chip); });
+    chip.append(miniIcon(charOf(s,i),i), document.createTextNode(s.seats[i].kind==="bot" ? NAMES[i]+" bot" : (s.seats[i].name||NAMES[i]))); m.appendChild(chip); });
 }
 function resumeLocal(){ const sv=readSave(); if (!sv) return renderResume(); G.mode="local"; G.code=null; resetShown(); G.state=sv.state; route(); }
 function commit(ns){
@@ -1485,7 +1586,7 @@ function setScene(yard,ch,i){
   yard.classList.toggle("has-scene", !!f);
 }
 const TROPHY='<svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 2h10v4a5 5 0 0 1-10 0z" fill="#FFD34D" stroke="#B8860B"/><path d="M5 4H2a3 3 0 0 0 3 4M15 4h3a3 3 0 0 1-3 4" fill="none" stroke="#B8860B" stroke-width="1.4"/><path d="M9 11h2v3h3v3H6v-3h3z" fill="#E0A515" stroke="#B8860B"/></svg>';
-const winKey=(s,i)=>s.seats[i].uid || ("seat"+i);
+const winKey=(s,i)=>{ const x=s.seats[i]; return x.uid || (x.kind==="human" && x.name ? "name:"+x.name.toLowerCase() : "seat"+i); };
 function renderYards(s){
   const playing=s.status==="playing";
   $("#board").dataset.turn = playing ? s.turn : "";
@@ -1864,7 +1965,8 @@ function playRoll(final, seat){
   setTimeout(()=>{ if (id===rollSeq && !finished){ draw(F[F.length-1]); done(); } }, sim.dur*1000+1500);
 }
 function rollAction(isBot){
-  const s=G.state; if (!s || s.status!=="playing" || s.rolled || G.anim) return;
+  const s=G.state; if (!s || s.status!=="playing" || s.rolled || G.anim || G.spinning || (!isBot && G.passPending)) return;
+  if (!isBot && s.seats[s.turn].kind==="human") G.lastHuman=s.turn;
   if (!isBot && !myTurn()) return;
   commit(doRoll(s,rollFor(s)));
 }
@@ -1877,7 +1979,7 @@ function onToken(seat,t){
 
 /* ---------- Automation: bots + forced moves ---------- */
 function maybeBot(){
-  const s=G.state; if (!s || s.status!=="playing" || G.anim) return;
+  const s=G.state; if (!s || s.status!=="playing" || G.anim || G.spinning) return;
   if (s.seats[s.turn].kind!=="bot") return;
   if (G.mode==="online" && (s.host!==G.me || G.canWrite===false)) return;
   if (botRev===s.rev) return; botRev=s.rev;
@@ -1901,6 +2003,7 @@ function fmtLog(e){
   const n = e.c!=null ? seatName(e.c) : "";
   switch(e.k){
     case "start": return "Game started. Roll a 6 to get out.";
+    case "first": return `${n} ${n==="You"?"go":"goes"} first`;
     case "nomove": return `${n} rolled ${e.d}, no move`;
     case "six3": return `${n} rolled three 6s and lost the turn`;
     case "out": return `${n} brought a token out`;
@@ -2019,7 +2122,7 @@ function renderGame(){
   const title=$("#turnTitle"), sub=$("#turnSub");
   if (G.anim && s.diceBy!=null){ const n=seatName(s.diceBy); tp.className="panel turn c-"+COLORS[s.diceBy]; title.textContent = n==="You" ? "You're rolling…" : `${n} is rolling…`; sub.textContent="Watch the board"; }
   else if (s.status==="done"){ title.textContent=`${seatName(s.winners[0])} ${seatName(s.winners[0])==="You"?"win":"wins"}!`; sub.textContent="Game over"; }
-  else if (me){ title.textContent = G.mode==="local" ? `${NAMES[cur]}'s turn` : "Your turn"; sub.textContent = s.rolled ? "Tap a glowing token to move it" : "Tap the board or the die to roll"; }
+  else if (me){ title.textContent = G.mode==="local" ? `${seatName(cur)}'s turn` : "Your turn"; sub.textContent = s.rolled ? "Tap a glowing token to move it" : "Tap the board or the die to roll"; }
   else {
     const n=seatName(cur);
     title.textContent = s.seats[cur].kind==="bot" ? `${n} is thinking` : `${n}'s turn`;
@@ -2028,7 +2131,10 @@ function renderGame(){
   // die
   dieEl.className="die c-"+COLORS[s.diceBy!=null && s.rolled===false && s.status==="playing" ? cur : (s.diceBy!=null?s.diceBy:cur)];
   if (G.anim && s.diceBy!=null) dieEl.className="die rolling c-"+COLORS[s.diceBy];
-  const canRoll = me && !s.rolled && s.status==="playing" && !G.anim;
+  const pass = G.mode==="local" && s.passScreen && s.status==="playing" && !s.rolled && !G.spinning && s.seats[cur].kind==="human"
+    && activeSeats(s).filter(i=>s.seats[i].kind==="human").length>1 && G.lastHuman!==cur;
+  G.passPending=pass; $("#passDev").hidden=!pass; if (pass) $("#passName").textContent=`${seatName(cur)}'s turn`;
+  const canRoll = me && !s.rolled && s.status==="playing" && !G.anim && !pass && !G.spinning;
   document.body.classList.toggle("can-roll", canRoll);
   dieEl.disabled=!canRoll; dieEl.classList.toggle("ready",canRoll);
   dieEl.setAttribute("aria-label", canRoll ? "Roll the die" : (s.dice ? "Last roll "+s.dice : "Die"));
@@ -2098,9 +2204,9 @@ function renderGame(){
     p.append(h,ol);
     const row=document.createElement("div"); row.className="row"; row.style.justifyContent="center";
     if (G.mode==="local" || s.host===G.me){
-      const again=document.createElement("button"); again.className="btn primary"; again.type="button"; again.textContent= G.mode==="local" ? "Play again" : "Back to lobby";
+      const again=document.createElement("button"); again.className="btn primary"; again.type="button"; again.textContent= G.mode==="local" ? "Play again with same players" : "Back to lobby";
       again.onclick=()=>{
-        if (G.mode==="local"){ const ns=startPlay(clone(G.state)); resetShown(); commit(ns); }
+        if (G.mode==="local"){ startLocal(setupFromState(G.state)); }
         else safeLocked(st=>{ st.status="lobby"; st.tokens=freshTokens(); st.winners=[]; st.log=[]; st.rolled=false; st.dice=null; return st; });
       };
       row.appendChild(again);
@@ -2112,6 +2218,7 @@ function renderGame(){
   maybeBot(); maybeAuto();
 }
 function resetShown(){
+  G.lastHuman=null; G.passPending=false; G.spinning=false; const sp=document.getElementById("spin"); if (sp) sp.hidden=true;
   if (typeof MASCOT!=="undefined"){ MASCOT.queue.length=0; MASCOT.seen={}; const ml=document.getElementById("mascots"); if (ml) ml.innerHTML=""; }
   G._sig={};
   stageCounts=null; const tl=document.getElementById("trail"); if (tl) tl.innerHTML="";
@@ -2126,18 +2233,125 @@ function goHome(){
   if (G.unsub){ try{G.unsub();}catch(e){} G.unsub=null; }
   clearTimeout(botTimer);
   G.mode=null; G.code=null; G.state=null; resetShown(); leaveRoom();
-  clearHash(); renderTop(); show("home"); loadTables(); renderResume();
+  clearHash(); renderTop(); show("home"); renderResume(); renderQuick();
 }
-function startLocal(){
-  const seats=[0,1,2,3].map(i=>({kind:$("#local-"+i).value, uid:null, char:localChars[i]}));
-  if (seats.filter(x=>x.kind!=="off").length<2){ toast("Pick at least 2 players."); return; }
-  if (!seats.some(x=>x.kind==="human")){ /* bots-only is allowed: a demo */ }
-  lsSet("ludo.localCfg", seats.map(x=>x.kind)); lsSet("ludo.localChars", localChars);
+/* ---------- Pass and play setup: who's playing, names, characters ---------- */
+const DEFAULT_SETUP={kinds:["human","bot","bot","bot"], names:["Player 1","Player 2","Player 3","Player 4"], chars:[...DEFAULT_CHAR], setting:"picnic", skin:"classic", pass:false};
+let setup=null, step=1;
+function loadSetup(){
+  const v=lsGet("ludo.lastSetup"), d=DEFAULT_SETUP;
+  if (v && Array.isArray(v.kinds) && v.kinds.length===4) setup={...d, ...v};
+  else { // carry over choices saved by earlier versions
+    const k=lsGet("ludo.localCfg"), c=lsGet("ludo.localChars");
+    setup={...d, kinds: Array.isArray(k)&&k.length===4 ? k : d.kinds, chars: Array.isArray(c)&&c.length===4 ? c : d.chars,
+      setting: SETTINGS[lsGet("ludo.localSetting")] ? lsGet("ludo.localSetting") : d.setting, skin: SKINS[lsGet("ludo.localSkin")] ? lsGet("ludo.localSkin") : d.skin};
+  }
+  setup.kinds=setup.kinds.map(k=>["human","bot","off"].includes(k)?k:"bot");
+  setup.chars=setup.chars.map((c,i)=>CHARS.includes(c)?c:DEFAULT_CHAR[i]);
+  setup.names=[0,1,2,3].map(i=>String((setup.names||[])[i]||"").slice(0,16) || "Player "+(i+1));
+}
+const cleanName=(n,i)=>String(n||"").replace(/\s+/g," ").trim().slice(0,16) || "Player "+(i+1);
+// Names must be unique: a repeat gets " 2", " 3" …
+function uniqueNames(names,kinds){
+  const used=new Set(), out=[...names];
+  kinds.forEach((k,i)=>{ if (k!=="human") return; let base=cleanName(names[i],i), n=base, c=2;
+    while (used.has(n.toLowerCase())){ n=(base.slice(0,13)+" "+c++); } used.add(n.toLowerCase()); out[i]=n; });
+  return out;
+}
+const STEP_TITLES=["Who's playing?","What are their names?","Characters and place"];
+function showStep(n){
+  step=n; [1,2,3].forEach(i=>$("#step"+i).hidden= i!==n);
+  $("#stepTitle").textContent=STEP_TITLES[n-1];
+  $("#stepDots").querySelectorAll("i").forEach((d,i)=>d.classList.toggle("on", i<n));
+  $("#stepNext").hidden = n===3; $("#localBtn").hidden = n!==3;
+  if (n===2) drawNames(); if (n===3) drawChars();
+  const first=$("#step"+n).querySelector("select,input,button"); if (first && n>1) first.focus({preventScroll:true});
+}
+function drawKinds(){
+  const box=$("#localCfg"); box.innerHTML="";
+  COLORS.forEach((c,i)=>{
+    const row=document.createElement("div"); row.className="seatrow c-"+c;
+    const lab=document.createElement("label"); lab.setAttribute("for","local-"+i);
+    const l=document.createElement("span"); l.className="lbl"; l.append(Object.assign(document.createElement("span"),{className:"dot"}), document.createTextNode(NAMES[i]));
+    const sel=document.createElement("select"); sel.id="local-"+i;
+    [["human","Person"],["bot","Bot"],["off","Off"]].forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o); });
+    sel.value=setup.kinds[i]; sel.onchange=()=>{ setup.kinds[i]=sel.value; };
+    lab.append(l,sel); row.append(lab); box.appendChild(row);
+  });
+}
+function drawNames(){
+  const box=$("#nameCfg"); box.innerHTML="";
+  const humans=[0,1,2,3].filter(i=>setup.kinds[i]==="human");
+  $("#nameHint").textContent = humans.length ? "Type each player's name. Up to 16 letters." : "Only bots are playing, so there are no names to enter.";
+  $("#shuffleBtn").hidden = [0,1,2,3].filter(i=>setup.kinds[i]!=="off").length<2;
+  [0,1,2,3].forEach(i=>{ if (setup.kinds[i]==="off") return;
+    const row=document.createElement("label"); row.className="namerow c-"+COLORS[i]; row.setAttribute("for","name-"+i);
+    const dot=Object.assign(document.createElement("span"),{className:"dot"});
+    if (setup.kinds[i]==="bot"){ const t=document.createElement("span"); t.className="botname"; t.textContent=NAMES[i]+" bot"; row.append(dot,t); }
+    else { const inp=document.createElement("input"); inp.className="input name"; inp.id="name-"+i; inp.maxLength=16; inp.autocomplete="off"; inp.value=setup.names[i];
+      inp.setAttribute("aria-label",NAMES[i]+" player's name"); inp.oninput=()=>{ setup.names[i]=inp.value; }; inp.onfocus=()=>inp.select(); row.append(dot,inp); }
+    box.appendChild(row);
+  });
+}
+// Shuffle who sits where: players keep their names, colours get dealt again.
+function shuffleSeats(){
+  const act=[0,1,2,3].filter(i=>setup.kinds[i]!=="off"), people=act.map(i=>[setup.kinds[i],setup.names[i]]);
+  for (let i=people.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [people[i],people[j]]=[people[j],people[i]]; }
+  act.forEach((seat,k)=>{ setup.kinds[seat]=people[k][0]; setup.names[seat]=people[k][1]; });
+  drawKinds(); drawNames(); toast("Seats shuffled.");
+}
+function drawChars(){
+  const box=$("#charCfg"); box.innerHTML="";
+  setup.names=uniqueNames(setup.names,setup.kinds);
+  [0,1,2,3].forEach(i=>{ if (setup.kinds[i]==="off") return;
+    const row=document.createElement("div"); row.className="seatrow c-"+COLORS[i];
+    const l=document.createElement("span"); l.className="lbl"; l.append(Object.assign(document.createElement("span"),{className:"dot"}), document.createTextNode(setup.kinds[i]==="bot" ? NAMES[i]+" bot" : setup.names[i]));
+    const holder=document.createElement("div");
+    const draw=()=>{ holder.innerHTML=""; holder.appendChild(charPicker(i, setup.chars[i], ch=>{ setup.chars[i]=ch; draw(); }, "localchar-"+i)); };
+    draw(); row.append(l,holder); box.appendChild(row);
+  });
+  $("#localSetting").value=setup.setting; $("#localSkin").value=setup.skin; $("#passScreen").checked=!!setup.pass;
+}
+function setupFromState(s){
+  return {...setup, kinds:s.seats.map(x=>x.kind), names:s.seats.map((x,i)=>x.name||setup.names[i]), chars:s.seats.map((x,i)=>charOf(s,i)), setting:settingOf(s), skin:skinOf(s), pass:!!s.passScreen};
+}
+function startLocal(from){
+  const su = from || setup;
+  if (su.kinds.filter(k=>k!=="off").length<2){ toast("Pick at least 2 players."); showStep(1); return; }
+  su.names=uniqueNames(su.names,su.kinds);
+  setup={...su}; lsSet("ludo.lastSetup", setup);
+  const seats=[0,1,2,3].map(i=>({kind:su.kinds[i], uid:null, char:su.chars[i], ...(su.kinds[i]==="human" ? {name:su.names[i]} : {})}));
   G.mode="local"; G.code=null; resetShown();
-  const sw=lsGet("ludo.localWins"), setting=$("#localSetting").value, skin=$("#localSkin").value; lsSet("ludo.localSetting",setting); lsSet("ludo.localSkin",skin);
-  const s=startPlay({seats, host:null, rev:0, status:"lobby", turn:0, rollId:0, setting, skin, wins: sw && typeof sw==="object" ? sw : {}});
-  G.state=null; commit(s);
+  const sw=lsGet("ludo.localWins");
+  const act=seats.map((x,i)=>x.kind!=="off"?i:-1).filter(i=>i>=0), first=act[Math.floor(Math.random()*act.length)];
+  const s=startPlay({seats, host:null, rev:0, status:"lobby", turn:0, rollId:0, setting:su.setting, skin:su.skin, passScreen:!!su.pass, wins: sw && typeof sw==="object" ? sw : {}}, first);
+  G.state=null; G.spinning=!reduceMotion; commit(s); whoGoesFirst(s);
 }
+// A quick spin over the players to pick who starts.
+async function whoGoesFirst(s){
+  if (!s || reduceMotion){ G.spinning=false; return; }
+  const ov=$("#spin"), row=$("#spinRow"), act=activeSeats(s);
+  row.innerHTML=""; act.forEach(i=>{ const c=document.createElement("span"); c.className="spinchip c-"+COLORS[i]; c.append(miniIcon(charOf(s,i),i), document.createTextNode(seatName(i,s))); row.appendChild(c); });
+  $("#spinText").textContent="Who goes first?"; ov.hidden=false; G.spinning=true;
+  const chips=[...row.children], target=act.indexOf(s.turn), turns=act.length*3+target;
+  for (let k=0;k<=turns;k++){ chips.forEach((c,j)=>c.classList.toggle("on", j===k%act.length)); tap(500+(k%act.length)*90,.05); await sleep(70+Math.pow(k/turns,3)*260); }
+  $("#spinText").textContent=`${seatName(s.turn,s)} ${seatName(s.turn,s)==="You"?"go":"goes"} first!`; tap(880,.08);
+  await sleep(1100); ov.hidden=true; G.spinning=false; if (G.state) route();
+}
+function renderQuick(){
+  const v=lsGet("ludo.lastSetup"), row=$("#quickRow");
+  if (!v || !Array.isArray(v.kinds)){ row.hidden=true; return; }
+  row.hidden=false;
+  const who=[0,1,2,3].filter(i=>v.kinds[i]!=="off").map(i=>v.kinds[i]==="bot" ? NAMES[i]+" bot" : (v.names&&v.names[i])||NAMES[i]);
+  $("#quickText").textContent=who.join(", ");
+}
+function buildLocalSetting(){
+  const sel=$("#localSetting"); Object.entries(SETTINGS).forEach(([k,v])=>{ const o=document.createElement("option"); o.value=k; o.textContent=v; sel.appendChild(o); });
+  const ks=$("#localSkin"); Object.entries(SKINS).forEach(([k,v])=>{ const o=document.createElement("option"); o.value=k; o.textContent=v; ks.appendChild(o); });
+  sel.onchange=()=>{ setup.setting=sel.value; }; ks.onchange=()=>{ setup.skin=ks.value; }; $("#passScreen").onchange=e=>{ setup.pass=e.target.checked; };
+}
+function buildLocalCfg(){ loadSetup(); drawKinds(); }
+function openLocalSetup(){ loadSetup(); drawKinds(); show("local"); showStep(1); }
 function genCode(){ const A="ABCDEFGHJKMNPQRSTUVWXYZ23456789"; let c=""; for (let i=0;i<5;i++) c+=A[Math.floor(Math.random()*A.length)]; return c; }
 async function createTable(){
   if (!G.db || !G.me) return;
@@ -2198,31 +2412,6 @@ async function loadTables(){
 }
 
 /* ---------- Home setup ---------- */
-let localChars=[...DEFAULT_CHAR];
-function buildLocalSetting(){
-  const sel=$("#localSetting"); Object.entries(SETTINGS).forEach(([k,v])=>{ const o=document.createElement("option"); o.value=k; o.textContent=v; sel.appendChild(o); });
-  const saved=lsGet("ludo.localSetting"); sel.value = SETTINGS[saved] ? saved : "picnic";
-  const ks=$("#localSkin"); Object.entries(SKINS).forEach(([k,v])=>{ const o=document.createElement("option"); o.value=k; o.textContent=v; ks.appendChild(o); });
-  const sk=lsGet("ludo.localSkin"); ks.value = SKINS[sk] ? sk : "classic";
-}
-function buildLocalCfg(){
-  const saved=lsGet("ludo.localCfg"); const def = Array.isArray(saved)&&saved.length===4 ? saved : ["human","bot","bot","bot"];
-  const sc=lsGet("ludo.localChars"); if (Array.isArray(sc)&&sc.length===4) localChars=sc.map((c,i)=>CHARS.includes(c)?c:DEFAULT_CHAR[i]);
-  const box=$("#localCfg"); box.innerHTML="";
-  COLORS.forEach((c,i)=>{
-    const row=document.createElement("div"); row.className="seatrow c-"+c;
-    const lab=document.createElement("label"); lab.setAttribute("for","local-"+i);
-    const l=document.createElement("span"); l.className="lbl"; l.append(Object.assign(document.createElement("span"),{className:"dot"}), document.createTextNode(NAMES[i]));
-    const sel=document.createElement("select"); sel.id="local-"+i;
-    [["human","Person"],["bot","Bot"],["off","Off"]].forEach(([v,t])=>{ const o=document.createElement("option"); o.value=v; o.textContent=t; sel.appendChild(o); });
-    sel.value = ["human","bot","off"].includes(def[i]) ? def[i] : "bot";
-    lab.append(l,sel);
-    const holder=document.createElement("div");
-    const drawPicker=()=>{ holder.innerHTML=""; holder.appendChild(charPicker(i, localChars[i], ch=>{ localChars[i]=ch; lsSet("ludo.localChars", localChars); drawPicker(); }, "localchar-"+i)); holder.hidden = sel.value==="off"; };
-    sel.addEventListener("change", drawPicker); drawPicker();
-    row.append(lab,holder); box.appendChild(row);
-  });
-}
 function setNickRow(){
   const row=$("#nickRow"), inp=$("#nick"); row.hidden = !(G.backend==="firebase" || (!window.claude && window.LUDO_FIREBASE));
   if (!G.nick){ G.nick=(lsGet("ludo.nick")||"").toString().slice(0,16) || ("Player "+Math.floor(100+Math.random()*900)); }
@@ -2240,11 +2429,29 @@ function setOnlineAvailability(){
 
 $("#homeBtn").onclick=goHome;
 if (lsGet("ludo.reduceFx")===true) document.body.classList.add("reduce-fx");
-$("#mat").addEventListener("click",e=>{ if (e.target.closest(".token.can")) return; const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; audio(); rollAction(false); });
+$("#mat").addEventListener("click",e=>{ if (e.target.closest(".token.can, .over")) return; const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; audio(); rollAction(false); });
 addEventListener("keydown",e=>{ if ((e.code!=="Space" && e.key!==" ") || $("#game").hidden || e.target.closest("input,select,textarea,button")) return;
   const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; e.preventDefault(); audio(); rollAction(false); });
 $("#resumeBtn").onclick=resumeLocal;
-$("#discardBtn").onclick=()=>{ saveLocal(null); renderResume(); const b=$("#localBtn"); b.scrollIntoView({behavior:"smooth",block:"center"}); b.focus({preventScroll:true}); toast("Saved game cleared. Pick players and press Start game."); };
+$("#discardBtn").onclick=()=>{ saveLocal(null); renderResume(); openLocalSetup(); };
+$("#modeLocal").onclick=openLocalSetup;
+$("#modeOnline").onclick=()=>{ show("onlineHome"); setNickRow(); setOnlineAvailability(); loadTables(); };
+$("#onlineBack").onclick=goHome;
+$("#stepPrev").onclick=()=>{ if (step>1) showStep(step-1); else goHome(); };
+$("#stepNext").onclick=()=>{ if (step===1 && setup.kinds.filter(k=>k!=="off").length<2){ toast("Pick at least 2 players."); return; } showStep(step+1); };
+$("#localBtn").onclick=()=>startLocal();
+$("#shuffleBtn").onclick=shuffleSeats;
+$("#quickBtn").onclick=()=>{ loadSetup(); startLocal(setup); };
+$("#rulesLink").onclick=()=>{ const r=$("#rules"); r.open=true; r.scrollIntoView({behavior:"smooth",block:"start"}); };
+const prefs=$("#prefs");
+$("#prefsLink").onclick=()=>{ $("#prefSound").checked=soundOn; $("#prefMascots").checked=lsGet("ludo.mascots")!==false; $("#prefFx").checked=!document.body.classList.contains("reduce-fx"); prefs.hidden=false; $("#prefsDone").focus(); };
+$("#prefSound").onchange=e=>{ soundOn=e.target.checked; lsSet("ludo.sound",soundOn); if (soundOn){ audio(); tap(660,.08); } };
+$("#prefMascots").onchange=e=>lsSet("ludo.mascots",e.target.checked);
+$("#prefFx").onchange=e=>{ document.body.classList.toggle("reduce-fx",!e.target.checked); lsSet("ludo.reduceFx",!e.target.checked); };
+$("#prefsDone").onclick=()=>{ prefs.hidden=true; $("#prefsLink").focus(); };
+prefs.addEventListener("click",e=>{ if (e.target===prefs) prefs.hidden=true; });
+addEventListener("keydown",e=>{ if (e.key==="Escape" && !prefs.hidden) prefs.hidden=true; });
+$("#passGo").onclick=e=>{ e.stopPropagation(); if (G.state) G.lastHuman=G.state.turn; G.passPending=false; $("#passDev").hidden=true; route(); };
 let installEvt=null;
 addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); installEvt=e; $("#installBtn").hidden=false; });
 $("#installBtn").onclick=async()=>{ if (!installEvt) return; installEvt.prompt(); try { await installEvt.userChoice; } catch(e){} installEvt=null; $("#installBtn").hidden=true; };
@@ -2260,13 +2467,12 @@ $("#createBtn").onclick=createTable;
 $("#joinForm").addEventListener("submit",e=>{ e.preventDefault(); openOnline($("#joinCode").value); });
 $("#joinCode").addEventListener("input",e=>{ e.target.value=e.target.value.toUpperCase().replace(/[^A-Z0-9]/g,""); });
 $("#refreshTables").onclick=loadTables;
-$("#localBtn").onclick=startLocal;
 $("#copyCode").onclick=copyCode;
 $("#lobbyLeave").onclick=goHome;
 $("#startBtn").onclick=()=>safeLocked(st=>{
   st.seats.forEach(x=>{ if (x.kind==="human" && !x.uid) x.kind="off"; });
   if (activeSeats(st).length<2){ toast("You need at least 2 players."); return null; }
-  return startPlay(st);
+  const act=activeSeats(st); return startPlay(st, act[Math.floor(Math.random()*act.length)]);
 });
 
 /* ---------- Firebase connector: lets the game run on its own website ----------
@@ -2320,7 +2526,7 @@ async function firebaseBackend(cfg){
 }
 
 /* ---------- Boot ---------- */
-buildLocalCfg(); buildLocalSetting(); initHeroBoard(); initGameBoard(); setFace(6); show("home"); setOnlineAvailability();
+buildLocalCfg(); buildLocalSetting(); renderQuick(); initHeroBoard(); initGameBoard(); setFace(6); show("home"); setOnlineAvailability();
 
 function start(data){
   if (data && data.localState && validState(data.localState)){ G.mode="local"; G.state=data.localState; route(); }
