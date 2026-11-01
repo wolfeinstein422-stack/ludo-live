@@ -718,6 +718,24 @@ body.can-roll .mat{cursor:pointer}
 @keyframes rf-echo{0%{transform:translate(-50%,-60%) scale(.2);opacity:0}10%{transform:translate(-50%,-110%) scale(1.1);opacity:1}25%{transform:translate(-50%,-100%) rotate(-8deg)}40%{transform:translate(-50%,-125%) rotate(8deg)}55%{transform:translate(-50%,-100%) rotate(-6deg)}70%{transform:translate(-50%,-120%) rotate(6deg)}85%{transform:translate(-50%,-105%);opacity:1}100%{transform:translate(-50%,-150%) scale(.7);opacity:0}}
 .mascot .m-who{display:block;font:700 10px/1.2 var(--font-body,inherit);text-transform:uppercase;letter-spacing:.06em;opacity:.55;margin-bottom:3px}
 .mascot .m-line{display:block}
+
+/* Movable pieces on your turn: a "pick me" hop, a glowing ring that ripples, and a bobbing arrow */
+.token.can{animation:pulse 1s ease-in-out infinite}
+.token.char.can{animation:none}
+.token.char.can .ch{animation:pickme 1.4s ease-in-out infinite;animation-delay:calc(var(--dl,0s) * .35)}
+@keyframes pickme{0%,52%,100%{transform:none}60%{transform:scale(1.08,.9)}72%{transform:translateY(-22%) scale(.95,1.07)}84%{transform:scale(1.06,.93)}91%{transform:translateY(-5%)}}
+.token.can::after{border:2.5px solid var(--pc);background:radial-gradient(closest-side,color-mix(in srgb,var(--pc) 45%,transparent),transparent);
+  animation:canring 1.4s ease-out infinite}
+@keyframes canring{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--pc) 75%,transparent),0 0 6px 1px var(--pc)}70%,100%{box-shadow:0 0 0 9px transparent,0 0 6px 1px var(--pc)}}
+.can-arrow{display:none;position:absolute;left:50%;top:-50%;width:46%;overflow:visible;color:var(--pc);pointer-events:none;
+  filter:drop-shadow(0 2px 2px rgba(0,0,0,.35));transform:translateX(-50%)}
+.token.can .can-arrow{display:block;animation:canarrow .7s ease-in-out infinite alternate}
+.token:not(.char).can .can-arrow{top:-82%;width:60%}
+.token:not(.char).can::after{background:none}
+@keyframes canarrow{to{transform:translate(-50%,-35%)}}
+.token.can:hover .ch,.token.can:focus-visible .ch{filter:brightness(1.08) drop-shadow(0 0 4px var(--pc))}
+body.reduce-fx .token.can .ch,body.reduce-fx .token.can .can-arrow,body.reduce-fx .token.can::after{animation:none!important}
+@media (prefers-reduced-motion:reduce){.token.can .ch,.token.can .can-arrow,.token.can::after{animation:none!important}}
 </style>
 
 <div id="setting" hidden aria-hidden="true"><div id="settingScene"></div><div class="dapple"></div><div class="tod-warm"></div><div class="tod-night"></div><div class="tod-stars"></div><div class="celestial"><i class="sun"></i><i class="moon"></i></div><div class="night-glow"></div><div class="fall"></div></div>
@@ -1408,7 +1426,7 @@ function ensureScared(el,seat){
 function setTokenChar(el,ch,seat,t){
   if (el.dataset.ch===ch) return;
   if (el.dataset.ch) el.classList.remove("ch-"+el.dataset.ch);
-  el.dataset.ch=ch; el.innerHTML=tokenInner(ch,seat);
+  el.dataset.ch=ch; el.innerHTML=tokenInner(ch,seat)+'<svg class="can-arrow" viewBox="-2 -2 24 18" aria-hidden="true"><path d="M2 1h16L10 12z" fill="currentColor" stroke="#fff" stroke-width="2.6" stroke-linejoin="round"/></svg>';
   el.classList.add("ch-"+ch); el.classList.toggle("char", ch!=="classic"); el.classList.toggle("sleeper", SLEEPERS.has(ch));
   el._pupils=[...el.querySelectorAll(".pupils")]; el._gdx=el._gdy=null;
   if (t!=null) el.setAttribute("aria-label",`${NAMES[seat]} ${CHAR_NAMES[ch].toLowerCase()} ${t+1}`);

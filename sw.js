@@ -1,5 +1,5 @@
 // Ludo Live offline support. Keeps a copy of the game, its fonts and icons on the device.
-const VERSION = "ludo-381fde5541";
+const VERSION = "ludo-4180b0d90f";
 const SHELL = ["./", "./index.html", "./config.js", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable.png", "./apple-touch-icon.png"];
 const FONT_CSS = "https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600..800&family=Figtree:wght@400;500;600;700&display=swap";
 const FIREBASE = ["app", "auth", "firestore"].map(n => `https://www.gstatic.com/firebasejs/10.12.2/firebase-${n}-compat.js`);
