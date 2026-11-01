@@ -112,6 +112,21 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
     check(!/Ben (rolled|brought|has no)/.test(await p.textContent("#log")) && (await p.textContent("#turnPanel")).includes("Ben's turn"), "tapping a piece moves it without rolling for the next player");
     await ctx.close(); }
 
+  // 3c. The next player can't roll until the piece has finished moving
+  { const st = { status: "playing", host: null, rev: 5, rollId: 3, turn: 0, rolled: true, dice: 5, diceBy: 0, sixes: 0, winners: [], lastMove: null, dry: [0,0,0,0], log: [{ k: "start" }],
+      seats: [{ kind: "human", uid: null, char: "penguin", name: "Asha" }, { kind: "human", uid: null, char: "owl", name: "Ben" }, { kind: "off", uid: null, char: "frog" }, { kind: "off", uid: null, char: "robot" }],
+      tokens: [[5,12,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]] };
+    const ctx = await newCtx(), p = await open(ctx, { fn: s => { window.claude = { hot: { data: { localState: s } } }; }, arg: st });
+    await p.waitForTimeout(600); await p.locator("#tokens .token.can").first().click({ force: true }); await p.waitForTimeout(300);
+    const moving = await p.$$eval("#tokens .token.hopping", e => e.length) > 0;
+    await p.mouse.click(300, 500); await p.waitForTimeout(400);
+    check(moving && !/Ben (rolled|brought|has no)/.test(await p.textContent("#log")), "no rolling while the piece is still hopping");
+    await p.waitForSelector("#die.ready", { timeout: 8000 }).catch(() => {});
+    check(await p.$$eval("#tokens .token.hopping", e => e.length) === 0, "the die wakes up once the piece has landed");
+    await p.mouse.click(300, 500); await p.waitForTimeout(2600);
+    check(/Ben (rolled|brought|has no)/.test(await p.textContent("#log")), "then the next player can roll");
+    await ctx.close(); }
+
   // 4. Two players online
   { const ctx = await newCtx(), host = await open(ctx), guest = await open(ctx);
     await host.click("#modeOnline"); await guest.click("#modeOnline");

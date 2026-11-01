@@ -1205,7 +1205,14 @@ function tap(pitch,vol=.08){
 /* ---------- App state ---------- */
 const G = { mode:null, code:null, state:null, unsub:null, db:null, user:null, me:null, canWrite:null, names:{}, lastRollId:null };
 let writeChain = Promise.resolve();
-const shown = {}, hopping = {}, animId = {};
+const shown = {}, hopping = {}, animId = {}, hopFrom = {};
+// A piece is still travelling (hopping, coming out, or being knocked home). The next roll waits for it.
+// The time cap means a stalled animation (e.g. a hidden tab) can never lock the game.
+const piecesMoving=()=> Object.keys(hopping).some(k=>hopping[k] && performance.now()-(hopFrom[k]||0)<8000);
+function settle(k){
+  const was=hopping[k]; hopping[k]=false;
+  if (was && !piecesMoving()) setTimeout(()=>{ if (G.state && !piecesMoving()) route(); },0);   // wake the die (and bots) once everything has landed
+}
 let botRev=-1, autoRev=-1, botTimer=null;
 
 function show(id){ ["home","local","onlineHome","lobby","game"].forEach(x => $("#"+x).hidden = x!==id); if (["home","local","onlineHome"].includes(id)) applySetting(null); window.scrollTo(0,0); }
@@ -1517,17 +1524,17 @@ function renderTokens(){
     if (old!==undefined && old>=0 && p>old && p-old<=6 && !reduceMotion) hop(el,seat,old,p,t,x,y,sc,k,st);
     else if (old!==undefined && old>=0 && old<=50 && p===-1 && !reduceMotion) knock(el,x,y,sc,k,s.lastMove,s,old);
     else if (old!==undefined && old<0 && p===0 && !reduceMotion) enter(el,x,y,sc,k,st);
-    else { animId[k]=(animId[k]||0)+1; hopping[k]=false; delete movingSince[k]; el.classList.remove("hopping","knocked","knocked-wait","scared"); setState(el,st); place(el,x,y,sc); }
+    else { animId[k]=(animId[k]||0)+1; settle(k); delete movingSince[k]; el.classList.remove("hopping","knocked","knocked-wait","scared"); setState(el,st); place(el,x,y,sc); }
   }
 }
 // Leaving the yard: each character has its own entrance.
 async function enter(el,x,y,sc,k,st){
-  const id=animId[k]=(animId[k]||0)+1; hopping[k]=true; movingSince[k]=performance.now(); kickGaze();
+  const id=animId[k]=(animId[k]||0)+1; hopping[k]=true; hopFrom[k]=performance.now(); movingSince[k]=performance.now(); kickGaze();
   setState(el,"move"); oneShot(el,"fx-enter",900); place(el,x,y,sc);
   { const seat=Math.floor(k/4), s=G.state, out= s ? s.tokens[seat].filter(p=>p>=0&&p<56).length : 0;
     if (out===1 || seeded((s&&s.rollId||0)*3+seat)<.35) mascotEvent("out",seat,{delay:350}); }
   await sleep(850); if (animId[k]!==id) return;
-  hopping[k]=false; delete movingSince[k]; setState(el,st);
+  settle(k); delete movingSince[k]; setState(el,st);
 }
 // Captured: only once the move is chosen. Trembles while the attacker comes, then gets knocked back to the yard.
 // What kind of capture: revenge, nearly-home, just-out, a streak, an old rival, or a plain one.
@@ -1548,7 +1555,7 @@ function captureKind(by,victim,oldPos,s){
   return "capture";
 }
 async function knock(el,x,y,sc,k,lm,s,oldPos){
-  const id=animId[k]=(animId[k]||0)+1; hopping[k]=true;
+  const id=animId[k]=(animId[k]||0)+1; hopping[k]=true; hopFrom[k]=performance.now();
   if (s) G.capRoll=s.rollId||0;
   ensureScared(el, Math.floor(k/4));
   el.classList.add("scared","knocked-wait");
@@ -1559,7 +1566,7 @@ async function knock(el,x,y,sc,k,lm,s,oldPos){
     mascotEvent(captureKind(lm.seat,v,oldPos,s), lm.seat, {victim:v, reply:v}); }
   el.classList.remove("knocked-wait"); el.classList.add("knocked"); movingSince[k]=performance.now(); kickGaze(); place(el,x,y,sc);
   await sleep(700); if (animId[k]!==id) return;
-  el.classList.remove("knocked","scared"); hopping[k]=false; delete movingSince[k]; setState(el,"yard");
+  el.classList.remove("knocked","scared"); settle(k); delete movingSince[k]; setState(el,"yard");
 }
 // How each character travels: ms per square, jump height (cells), squash, lean, waddle, flapping, step sound.
 const GAIT={
@@ -1585,7 +1592,7 @@ function pose(el,liftCells,sx,sy,rot){
   el.style.setProperty("--sx",sx.toFixed(3)); el.style.setProperty("--sy",sy.toFixed(3)); el.style.setProperty("--rot",rot.toFixed(2)+"deg");
 }
 async function hop(el,seat,from,to,t,fx,fy,fsc,k,st){
-  const id=animId[k]=(animId[k]||0)+1; hopping[k]=true; movingSince[k]=performance.now(); kickGaze();
+  const id=animId[k]=(animId[k]||0)+1; hopping[k]=true; hopFrom[k]=performance.now(); movingSince[k]=performance.now(); kickGaze();
   const ch=el.dataset.ch||"classic", g=GAIT[ch]||GAIT.classic, n=to-from, times=stepTimes(ch,n);
   setState(el,"move"); el.classList.add("hopping"); el.classList.toggle("flapping",!!g.flap);
   const pts=[[el._x,el._y]]; for (let q=from+1;q<=to;q++) pts.push(q===to?[fx,fy]:coord(seat,q,t));
@@ -1613,7 +1620,7 @@ async function hop(el,seat,from,to,t,fx,fy,fsc,k,st){
   if (!alive()) return;
   pose(el,0,1,1,0); el.classList.remove("hopping","flapping");
   place(el,fx,fy,fsc);
-  hopping[k]=false; delete movingSince[k]; setState(el,st);
+  settle(k); delete movingSince[k]; setState(el,st);
   if (st==="home"){ oneShot(el,"fx-arrive",1600); if (G.state && G.state.status!=="done") mascotEvent("home",seat,{delay:300}); }
   else if (st==="safe") oneShot(el,"fx-safe",700);
 }
@@ -2335,7 +2342,7 @@ function playRoll(final, seat){
   setTimeout(()=>{ if (id===rollSeq && !finished){ draw(F[F.length-1]); done(); } }, sim.dur*1000+1500);
 }
 function rollAction(isBot){
-  const s=G.state; if (!s || s.status!=="playing" || s.rolled || G.anim || G.spinning || (!isBot && G.passPending)) return;
+  const s=G.state; if (!s || s.status!=="playing" || s.rolled || G.anim || G.spinning || piecesMoving() || (!isBot && G.passPending)) return;
   if (!isBot && s.seats[s.turn].kind==="human") G.lastHuman=s.turn;
   if (!isBot && !myTurn()) return;
   commit(doRoll(s,rollFor(s)));
@@ -2349,14 +2356,14 @@ function onToken(seat,t){
 
 /* ---------- Automation: bots + forced moves ---------- */
 function maybeBot(){
-  const s=G.state; if (!s || s.status!=="playing" || G.anim || G.spinning || G.duet) return;
+  const s=G.state; if (!s || s.status!=="playing" || G.anim || G.spinning || G.duet || (!s.rolled && piecesMoving())) return;
   if (s.seats[s.turn].kind!=="bot") return;
   if (G.mode==="online" && (s.host!==G.me || G.canWrite===false)) return;
   if (botRev===s.rev) return; botRev=s.rev;
   clearTimeout(botTimer);
   botTimer=setTimeout(()=>{
     if (!G.state || G.state.rev!==s.rev) return;
-    if (G.duet){ botRev=null; return; }                 // picked up again when the mascots finish
+    if (G.duet || (!s.rolled && piecesMoving())){ botRev=null; return; }                 // picked up again when the mascots finish
     if (!s.rolled) rollAction(true); else commit(doMove(s, botPick(s)));
   }, s.rolled ? 600 : 750);
 }
@@ -2543,7 +2550,7 @@ function renderGame(){
   const pass = G.mode==="local" && s.passScreen && s.status==="playing" && !s.rolled && !G.spinning && s.seats[cur].kind==="human"
     && activeSeats(s).filter(i=>s.seats[i].kind==="human").length>1 && G.lastHuman!==cur;
   G.passPending=pass; $("#passDev").hidden=!pass; if (pass) $("#passName").textContent=`${seatName(cur)}'s turn`;
-  const canRoll = me && !s.rolled && s.status==="playing" && !G.anim && !pass && !G.spinning;
+  const canRoll = me && !s.rolled && s.status==="playing" && !G.anim && !pass && !G.spinning && !piecesMoving();
   document.body.classList.toggle("can-roll", canRoll);
   dieEl.disabled=!canRoll; dieEl.classList.toggle("ready",canRoll);
   dieEl.setAttribute("aria-label", canRoll ? "Roll the die" : (s.dice ? "Last roll "+s.dice : "Die"));
