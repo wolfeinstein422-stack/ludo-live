@@ -716,6 +716,8 @@ body.can-roll .mat{cursor:pointer}
 @keyframes pressed{0%{transform:scale(1)}35%{transform:scale(.82)}70%{transform:scale(1.15)}100%{transform:scale(1)}}
 .react-echo{position:fixed;z-index:70;pointer-events:none;font-size:56px;line-height:1;transform:translate(-50%,-100%);filter:drop-shadow(0 4px 6px rgba(0,0,0,.3));animation:rf-echo 2.6s ease-in-out forwards}
 @keyframes rf-echo{0%{transform:translate(-50%,-60%) scale(.2);opacity:0}10%{transform:translate(-50%,-110%) scale(1.1);opacity:1}25%{transform:translate(-50%,-100%) rotate(-8deg)}40%{transform:translate(-50%,-125%) rotate(8deg)}55%{transform:translate(-50%,-100%) rotate(-6deg)}70%{transform:translate(-50%,-120%) rotate(6deg)}85%{transform:translate(-50%,-105%);opacity:1}100%{transform:translate(-50%,-150%) scale(.7);opacity:0}}
+.mascot .m-who{display:block;font:700 10px/1.2 var(--font-body,inherit);text-transform:uppercase;letter-spacing:.06em;opacity:.55;margin-bottom:3px}
+.mascot .m-line{display:block}
 </style>
 
 <div id="setting" hidden aria-hidden="true"><div id="settingScene"></div><div class="dapple"></div><div class="tod-warm"></div><div class="tod-night"></div><div class="tod-stars"></div><div class="celestial"><i class="sun"></i><i class="moon"></i></div><div class="night-glow"></div><div class="fall"></div></div>
@@ -1513,7 +1515,7 @@ function renderTokens(){
     const old=shown[k]; shown[k]=p;
     if (old===p && hopping[k]) continue;
     if (old!==undefined && old>=0 && p>old && p-old<=6 && !reduceMotion) hop(el,seat,old,p,t,x,y,sc,k,st);
-    else if (old!==undefined && old>=0 && old<=50 && p===-1 && !reduceMotion) knock(el,x,y,sc,k,s.lastMove,s);
+    else if (old!==undefined && old>=0 && old<=50 && p===-1 && !reduceMotion) knock(el,x,y,sc,k,s.lastMove,s,old);
     else if (old!==undefined && old<0 && p===0 && !reduceMotion) enter(el,x,y,sc,k,st);
     else { animId[k]=(animId[k]||0)+1; hopping[k]=false; delete movingSince[k]; el.classList.remove("hopping","knocked","knocked-wait","scared"); setState(el,st); place(el,x,y,sc); }
   }
@@ -1528,14 +1530,33 @@ async function enter(el,x,y,sc,k,st){
   hopping[k]=false; delete movingSince[k]; setState(el,st);
 }
 // Captured: only once the move is chosen. Trembles while the attacker comes, then gets knocked back to the yard.
-async function knock(el,x,y,sc,k,lm,s){
+// What kind of capture: revenge, nearly-home, just-out, a streak, an old rival, or a plain one.
+function captureKind(by,victim,oldPos,s){
+  const caps=G.caps=G.caps||[];
+  const before=caps.filter(c=>c[0]===by).length;
+  const last=[...caps].reverse().find(c=>(c[0]===by&&c[1]===victim)||(c[0]===victim&&c[1]===by));
+  caps.push([by,victim]);
+  let n=0; const ka=winKey(s,by), kb=winKey(s,victim);
+  if (!ka.startsWith("seat") && !kb.startsWith("seat") && ka!==kb){   // rivalries between named or signed-in players, kept across games
+    const riv=lsGet("ludo.rivals")||{}, pair=[ka,kb].sort().join("|"); n=riv[pair]||0; riv[pair]=n+1;
+    const keys=Object.keys(riv); if (keys.length>120) delete riv[keys[0]]; lsSet("ludo.rivals",riv); }
+  if (last && last[0]===victim) return "revenge";
+  if (oldPos>=38) return "close";
+  if (oldPos>=0 && oldPos<=3) return "fresh";
+  if (before>=1) return "streak";
+  if (n>=4) return "rival";
+  return "capture";
+}
+async function knock(el,x,y,sc,k,lm,s,oldPos){
   const id=animId[k]=(animId[k]||0)+1; hopping[k]=true;
+  if (s) G.capRoll=s.rollId||0;
   ensureScared(el, Math.floor(k/4));
   el.classList.add("scared","knocked-wait");
   const wait = lm && lm.from>=0 ? moveDuration(charOf(s,lm.seat), lm.to-lm.from)-60 : 500;
   await sleep(wait); if (animId[k]!==id) return;
   captureImpact(k, el._x, el._y);
-  if (lm && lm.seat!=null){ mascotEvent("capture", lm.seat, {victim:Math.floor(k/4)}); mascotEvent("captured", Math.floor(k/4), {delay:150}); }
+  if (lm && lm.seat!=null && G.capSaid!==(s.rollId||0)){ G.capSaid=s.rollId||0; const v=Math.floor(k/4);
+    mascotEvent(captureKind(lm.seat,v,oldPos,s), lm.seat, {victim:v, reply:v}); }
   el.classList.remove("knocked-wait"); el.classList.add("knocked"); movingSince[k]=performance.now(); kickGaze(); place(el,x,y,sc);
   await sleep(700); if (animId[k]!==id) return;
   el.classList.remove("knocked","scared"); hopping[k]=false; delete movingSince[k]; setState(el,"yard");
@@ -1866,7 +1887,10 @@ function podiumScene(s){
     const hx=pos[0].cx, hy=pos[0].foot-58;
     out.push(podBubble(hx+26,hy-30,line,hx+18,hy+10,PAL[W[0]][2],2.0));
     const c2=pos[1].ch, ax=pos[1].cx, ay=pos[1].foot-52;
-    out.push(podBubble(0,ay-34,POD_CHEER[c2]||POD_CHEER.classic,ax-4,ay+2,PAL[W[1]][2],2.6,true));
+    // The runner-up gets a spicy good-game line aimed at the winner.
+    let wn=seatName(W[0]); if (wn==="You") wn="you";
+    const gg=(LINES[c2]||LINES.classic).gg, l2= gg ? gg[Math.floor(seeded((s.rollId||0)*37+W[1])*gg.length)].replaceAll("{v}",podShort(wn)) : (POD_CHEER[c2]||POD_CHEER.classic);
+    out.push(podBubble(0,ay-34,l2,ax-4,ay+2,PAL[W[1]][2],2.6,true));
   }
   const ranks=W.map((seat,i)=>`${["1st","2nd","3rd","4th"][i]} ${seatName(seat)}`).join(", ");
   return `<svg class="pod-scene" viewBox="0 0 360 290" preserveAspectRatio="xMidYMax meet" role="img" aria-label="Final ranking: ${podEsc(ranks)}">${out.join("")}</svg>`;
@@ -2006,32 +2030,165 @@ function updateTime(s){
 }
 
 /* ---------- Mascots: each set's big character leans in from its player's side of the screen ---------- */
+// What each mascot says. {v} is the other player's name (never at the start of a line, never "{v}'s").
+// Spicy but about pieces and luck, never about the person.
 const LINES={
-  robot:  {capture:["Target removed. Beep boop.","Error 404: {v} not found.","Rebooting you to the yard, {v}."], captured:["Does not compute!","Recalibrating… grr."],
-           out:["Systems online!","Deploying unit!","Boot complete."], six:["Lucky number detected!","Six! Calculating victory…"], home:["Unit docked!","Mission complete."],
-           win:["VICTORY.EXE","All units home. Flawless."], nomove:["Processing… nothing.","Standby mode."]},
-  frog:   {capture:["Ribbit! Splash, you're out!","Hop along home, {v}!","Croak-tastic!"], captured:["Not my lily pad!","Ribbit… rude!"],
-           out:["Hop to it!","Leap time!"], six:["Super hop!","Six! Ribbit!"], home:["Made it to the pond!","Splash landing!"],
-           win:["King of the pond!","Ribbit! Champion!"], nomove:["Just… sitting here.","Catching flies instead."]},
-  chick:  {capture:["Peck peck, gone!","Cheep cheep, see ya {v}!","Shoo, back to your coop!"], captured:["Fowl play!","Hey! Cheep!"],
-           out:["Out of the nest!","Flap flap, go!"], six:["Egg-cellent!","Six! Cheep cheep!"], home:["Home to roost!","Nest sweet nest!"],
-           win:["Winner winner!","Top chick!"], nomove:["Cheep… nothing.","Pecking at nothing."]},
-  cat:    {capture:["Pounced. Purr-fect.","Meow-t you go, {v}!","Should've stayed in, {v}."], captured:["Hiss!","Claws out now!"],
-           out:["Stretch… and go!","Paws out!"], six:["Purr-fect six!","Six. Obviously."], home:["Napping at home.","Curled up. Done."],
-           win:["Bow to the cat.","Cat-astrophic for you all!"], nomove:["Too lazy anyway.","Meh. Nap time."]},
-  owl:    {capture:["Whoo's out? You are!","Wise move. Sorry, {v}.","Saw that coming. Hoo!"], captured:["Whoo did that?!","Hoo-ow!"],
-           out:["Taking flight!","Hoo-ray, I'm out!"], six:["Six, as predicted.","Hoo! Six!"], home:["Back to the nest.","Hoo-me sweet home."],
-           win:["Owl-standing!","Wisest of them all."], nomove:["Hmm… I'll wait.","Patience. Hoo."]},
-  penguin:{capture:["Slid right past you!","Ice to beat you, {v}!","Waddle bye, {v}!"], captured:["Brrr, rude!","Cold move!"],
-           out:["Waddle waddle, go!","Off the ice!"], six:["Cool six!","Six! Ice ice baby."], home:["Chillin' at home.","Slid in safe!"],
-           win:["Coolest one here!","Ice cold victory!"], nomove:["Waddling in place.","Brr… nothing."]},
-  classic:{capture:["Gotcha!","Back you go, {v}!","Sorry, not sorry!"], captured:["Hey!","Not fair!"],
-           out:["Here I come!","Let's go!"], six:["Six!","Roll on!"], home:["One home!","Safe and sound!"],
-           win:["Winner!","Champion!"], nomove:["Nothing to do…","Next time."]},
+  robot:{
+    capture:["Target eliminated. Beep boop.","Error 404: your piece not found.","Deleted. No undo button, {v}.","Rebooting you to the yard, {v}.","Threat neutralised. Too easy.","Running victory.exe on {v}…"],
+    revenge:["Grudge file closed. Payback, {v}.","You hit me. I logged it. Now this.","Revenge protocol: complete.","I never forget, {v}. I'm a robot."],
+    close:["So close to home, {v}. Shame.","Progress lost: 100%. Ouch.","All that walking for nothing, {v}.","Home was right there. Was."],
+    fresh:["Out of the yard for one second. Gone.","Welcome to the board. Goodbye.","Fastest exit ever recorded, {v}.","Tutorial over, {v}."],
+    streak:["Capture count rising. Who's next?","Efficiency at 200%.","Another one for the scrap pile.","I'm on a roll. You're on the floor."],
+    rival:["You again, {v}? I have a whole file on you.","Rival detected. Rival destroyed.","Our history says I win, {v}.","Still losing to me, {v}?"],
+    captured:["Does not compute! I'll be back.","System error… temporary.","Rebooting. Revenge loading…","You'll regret that line of code.","Damage logged. Payback scheduled.","Recalibrating… and aiming at you."],
+    lead:["New leader: me. Update your records, {v}.","Overtaking. Bye bye, {v}.","Position one acquired.","You've been outclocked, {v}."],
+    bigLead:["Lead so big it needs more memory.","Is anyone else even running?","Calculating your chances… zero.","I could power down and still win."],
+    underdog:["Low battery. High hopes.","Last place is just a warm-up.","Rebooting my comeback.","Plot twist pending. Please wait."],
+    behind:["Locking on to you, {v}.","Target in range. Run, {v}.","I see you, {v}. Beep.","Countdown started, {v}."],
+    escape:["Shields up. Can't touch this, {v}.","Evasive manoeuvre complete.","Nice try, {v}. Safe zone.","Missed me, {v}. Rebooting your plan?"],
+    final:["Last piece each. Winner takes all.","Final protocol engaged.","One piece. One winner. Me."],
+    dry:["Still waiting for a six, {v}? Cute.","Your dice need a software update, {v}.","Still buffering, {v}? Still buffering.","Six not found, {v}. Try again later."],
+    gg:["Good game. Rematch so I can win.","Unlucky dice. Not me. The dice.","Congrats, {v}. Enjoy it. It won't last.","Rematch requested. Revenge loading."],
+    out:["Systems online!","Deploying unit!","Boot complete. Fear me.","New unit on the field."],
+    six:["Six detected. Brace yourselves.","Lucky number located!","Six. As calculated.","Maximum roll. Maximum danger."],
+    home:["Unit docked!","Mission complete.","One home. Three to go. Panic now.","Safely parked. Try and catch that."],
+    win:["VICTORY.EXE","All units home. Flawless.","Winner: me. Losers: also listed.","Game over. Upgrade your strategy.","Resistance was pointless."],
+    nomove:["Processing… nothing.","Standby mode.","Zero moves. Zero worries.","Saving my energy for you."]},
+  frog:{
+    capture:["Ribbit! Splash, you're out!","Hop along home, {v}!","Croak-tastic! Bye bye!","Squashed like a fly, {v}!","Back to the swamp with you!","That's a frog-gone conclusion!"],
+    revenge:["Remember me, {v}? Ribbit. Payback!","You splashed me. Now I splash you!","Revenge is best served… wet!","Frogs never forget, {v}!"],
+    close:["Nearly at the pond, {v}? Not today!","So close! And now so far!","All that hopping for nothing, {v}!","Hop all the way back, {v}!"],
+    fresh:["You just got out! Ha! Back in!","Tadpole-sized trip, {v}!","Blink and you're gone, {v}!","Welcome to the pond. Now leave!"],
+    streak:["Another one! I'm on a hop streak!","Two down! Who's next on the menu?","Ribbit ribbit, I'm unstoppable!","Fly-swatting season is open!"],
+    rival:["You again, {v}? This pond's mine!","Our feud continues. I'm winning, {v}!","Ribbit. Same story, {v}. You lose.","My favourite target is back!"],
+    captured:["Not my lily pad! You'll pay!","Ribbit… rude! Very rude!","Croak! That's going in my diary!","I'll hop right back, just watch!","Swamp justice is coming!","You'll croak for that!"],
+    lead:["Leapfrogged you, {v}!","Hop hop, I'm in front!","Look who's leading the pond!","Out of my way, {v}! Ribbit!"],
+    bigLead:["Am I racing alone? Ribbit!","Catch me if you can! You can't.","So far ahead I'm napping on a lily pad.","Ribbit. Too easy."],
+    underdog:["Slow and steady… wait, that's turtles.","Watch this frog fly!","Last now. Leaping later!","Small frog. Big comeback."],
+    behind:["Hop hop, I'm right behind you, {v}!","Feel that breath, {v}? Ribbit.","My tongue can reach you, {v}!","Run, little fly! Run, {v}!"],
+    escape:["Safe on my lily pad! Nyah!","Missed me, {v}! Ribbit!","Can't catch a slippery frog!","Too slow, {v}! Splash!"],
+    final:["One piece each. Ribbit… it's on!","Final hop! Winner takes the pond!","Last leap decides it all!"],
+    dry:["Still no six, {v}? Ribbit-diculous!","Your fort's growing moss, {v}!","Waiting for a six, {v}? I'll wait. Not.","Those dice are croaking on you, {v}!"],
+    gg:["Good game! You got lucky, {v}!","Rematch! My legs were warming up!","Fine, {v}. Enjoy your fly.","Ribbit. Rematch. Now."],
+    out:["Hop to it!","Leap time!","Free from the fort! Ribbit!","Here comes trouble!"],
+    six:["Super hop!","Six! Ribbit!","Six! Mega leap incoming!","Hop, hop, HOP!"],
+    home:["Made it to the pond!","Splash landing!","One frog home! Croak!","Pond sweet pond!"],
+    win:["King of the pond!","Ribbit! Champion!","All frogs home! Bow down!","Hop-solutely unbeatable!","Crown me, frogs!"],
+    nomove:["Just… sitting here.","Catching flies instead.","Nothing? Fine. Ribbit.","I'll sit on my lily pad then."]},
+  chick:{
+    capture:["Peck peck, gone!","Cheep cheep, see ya {v}!","Shoo, back to your coop!","Pecked and wrecked!","Egg-sterminated, {v}!","That's what you get, {v}! Cheep!"],
+    revenge:["You pecked me! Now I peck YOU, {v}!","Payback, {v}! Cheep cheep!","Revenge is egg-cellent!","Did you think I forgot, {v}? Cheep!"],
+    close:["Almost at the nest? NOT anymore!","So close, {v}! So, so close! Ha!","Scrambled right before home!","All the way back, {v}! Cheep!"],
+    fresh:["You just hatched! Back in the egg!","Out and in! Ha ha, {v}!","Didn't even get to stretch, {v}!","Fresh out and fried!"],
+    streak:["Another one! I'm on fire! Cheep!","Who's next? Line up!","Peck streak! Peck streak!","Chick of destruction!"],
+    rival:["YOU again, {v}?! Cheep cheep!","Our beef continues, {v}! Chicken beef!","I always get you, {v}!","Rival time! Peck peck!"],
+    captured:["Fowl play! FOWL PLAY!","Hey! Cheep! I'm telling!","I'll peck you back, just wait!","Rude! Very rude! Cheep!","My feathers are ruffled!","This chick is coming for you!"],
+    lead:["I'm in front! Cheep cheep!","Passed you, {v}! Flap flap!","Look at me leading!","Bye bye, {v}! Eat my feathers!"],
+    bigLead:["I'm SO far ahead! Cheep!","Is this even a race?","Egg-stremely winning right now!","Too fast for you all!"],
+    underdog:["Small chick, big dreams!","Last? Not for long! Cheep!","Comeback chick incoming!","Just warming my wings up!"],
+    behind:["Peck peck, I'm right behind you, {v}!","Gonna get you, {v}! Cheep!","Run, {v}! RUN!","I can see your tail feathers, {v}!"],
+    escape:["Safe! Nyah nyah, {v}!","Can't peck me here!","Missed me! Cheep cheep!","Too quick for you, {v}!"],
+    final:["Last piece each! Cheep! Nervous!","Final flap! Winner takes all!","One each! This is it!"],
+    dry:["No six yet, {v}? Cheep cheep!","Still in the coop, {v}?","Your fort's getting crowded, {v}!","The dice hate you, {v}! Cheep!"],
+    gg:["Good game! You got lucky!","Rematch! RIGHT NOW! Cheep!","Fine, {v}. Next time I win!","Enjoy it, {v}! Cheep."],
+    out:["Out of the nest!","Flap flap, go!","Free! Cheep cheep!","Watch out, I'm loose!"],
+    six:["Egg-cellent!","Six! Cheep cheep!","SIX! Big flap!","Six! Here I come!"],
+    home:["Home to roost!","Nest sweet nest!","One chick safe! Cheep!","Snug in the nest!"],
+    win:["Winner winner!","Top chick!","All chicks home! I WIN!","Bow to the chick!","Cheep cheep champion!"],
+    nomove:["Cheep… nothing.","Pecking at nothing.","Boring! Cheep.","I'll just flap here then."]},
+  cat:{
+    capture:["Pounced. Purr-fect.","Meow-t you go, {v}!","Should've stayed in, {v}.","Batted off the board.","Claws out. You're out.","Toy acquired. Toy discarded."],
+    revenge:["Payback, {v}. Cats keep score.","You scratched me. I scratch harder.","Revenge tastes like tuna.","I waited, {v}. Cats always wait."],
+    close:["Almost home? How sad. For you.","So close, {v}. Tragic. Purr.","All that effort. Wasted. Meow.","Back to the start, {v}. Enjoy."],
+    fresh:["Out for one second. Pathetic.","Fresh out and already gone, {v}.","Didn't even make it past my paw.","Too easy, {v}. Yawn."],
+    streak:["Another one. I'm bored of winning.","Collecting pieces like mice.","Hunting season, darling.","Who wants to be next? Anyone?"],
+    rival:["You again, {v}? Your favourite loss.","Our little feud. I always win, {v}.","Still chasing me, {v}? Cute.","Hello again, {v}. Goodbye again."],
+    captured:["Hiss! You'll regret that.","Claws out now!","How dare you touch the cat.","I'll remember this. Forever.","Rude. Very rude. Hiss.","Nine lives. This was one. Watch out."],
+    lead:["Out of my way, {v}. The cat leads.","Passed you. Didn't even try.","First place. Obviously.","Excuse me, {v}. Cat coming through."],
+    bigLead:["Is anyone else even playing?","I'm so far ahead I'll take a nap.","Wake me when you catch up.","This is just sad for you all."],
+    underdog:["Last place? I'm just stretching.","Cats always land on their feet.","Watch me pounce back.","Let them think I'm losing."],
+    behind:["I'm right behind you, {v}. Purr.","Feel those whiskers, {v}?","Run, little mouse.","Pounce loading, {v}…"],
+    escape:["Safe. You'll never catch a cat.","Missed me, {v}. Of course.","Too graceful for you.","Nice try, {v}. Purr."],
+    final:["One piece each. How dramatic.","Final pounce decides everything.","Last piece. Last chance. For you."],
+    dry:["Still no six, {v}? Embarrassing.","Your fort's a cat bed now, {v}.","Those dice hate you, {v}. Same.","Waiting for a six, {v}? Adorable."],
+    gg:["Good game. I let you win, {v}.","Rematch. I wasn't trying.","Enjoy it, {v}. Briefly.","Lucky. Very lucky. Meow."],
+    out:["Stretch… and go!","Paws out!","The cat is out of the bag.","Out. Fear the paws."],
+    six:["Purr-fect six!","Six. Obviously.","Six. I deserve it.","Six. Watch and learn."],
+    home:["Napping at home.","Curled up. Done.","One home. Easy.","Found a warm spot. Mine."],
+    win:["Bow to the cat.","Cat-astrophic for you all!","Winner. Naturally.","Nine lives, one champion.","Now feed me. I won."],
+    nomove:["Too lazy anyway.","Meh. Nap time.","Didn't want to move anyway.","Not worth getting up."]},
+  owl:{
+    capture:["Whoo's out? You are!","Saw that coming. Hoo!","Wisdom beats luck, {v}.","Hoo hoo, back to start, {v}.","Lesson one: never stand there.","Swooped and scooped!"],
+    revenge:["You struck first, {v}. Big mistake.","Payback, hoo! The owl remembers.","Revenge is a wise owl's dish.","History lesson: don't hit owls, {v}."],
+    close:["So near the nest, {v}. Hoo-ps!","All that way? How unwise.","Back to square one. Study harder, {v}.","Nearly home? Not on my watch."],
+    fresh:["Just out? Rookie mistake, {v}.","Back to class, {v}. Hoo.","Didn't even finish the first lesson.","Out and in. Hoo-milating."],
+    streak:["Another one. I'm a genius.","Two captures. Wisdom pays.","Who's next for a lesson?","My strategy is flawless. Hoo."],
+    rival:["You again, {v}? Haven't you learned?","Our rivalry is a lecture series, {v}.","I always outsmart you, {v}.","Same mistake, {v}. Same owl."],
+    captured:["Whoo did that?! Hoo-ow!","Hoo-rude! I'll remember.","A setback. Not a defeat.","Unwise move. Very unwise.","I'll swoop back. Count on it.","Hoo dares?!"],
+    lead:["Hoo's in front? Me.","Overtaken, {v}. Wisdom wins.","First place, as predicted.","Moved ahead. Elementary, {v}."],
+    bigLead:["So far ahead, I'm reading a book.","Did anyone else bring a brain?","The wise owl leads. As usual.","Catch up? Hoo. Unlikely."],
+    underdog:["Last place is a clever disguise.","Patience. The owl strikes late.","Hoo… plotting a comeback.","Behind? All part of the plan."],
+    behind:["I'm watching you, {v}. Hoo.","Right behind you, {v}. Wise up.","My eyes are on you, {v}.","Swoop incoming, {v}."],
+    escape:["Safe, as calculated.","Missed me, {v}. Hoo hoo.","Too wise to be caught.","Nice try, {v}. Study harder."],
+    final:["One piece each. A final exam.","Last move decides the wisest.","Final round. Hoo will win?"],
+    dry:["No six yet, {v}? Hoo hoo.","Still in the fort, {v}? Study the dice.","Six is a number, {v}. Look it up.","The dice skipped class for you, {v}."],
+    gg:["Good game. Luck, not wisdom.","Rematch. I'll teach you properly.","Enjoy it, {v}. Lucky hoo.","Well played. Barely."],
+    out:["Taking flight!","Hoo-ray, I'm out!","The owl has landed.","Wings out. Watch out."],
+    six:["Six, as predicted.","Hoo! Six!","Six. Wisdom rewarded.","A wise six."],
+    home:["Back to the nest.","Hoo-me sweet home.","One wise owl home.","Perched and safe."],
+    win:["Owl-standing!","Wisest of them all.","Class dismissed. I win.","Hoo's the champion? Me.","Brains beat dice."],
+    nomove:["Hmm… I'll wait.","Patience. Hoo.","Nothing? Wise to wait.","Thinking… nothing."]},
+  penguin:{
+    capture:["Slid right past you!","Ice to beat you, {v}!","Waddle bye, {v}!","Frozen out!","Put on ice, {v}. Chill.","Cold. Cold-blooded."],
+    revenge:["Ice-cold payback, {v}.","You froze me. I froze you.","Revenge served chilled.","Penguins never forget, {v}."],
+    close:["Nearly home? Slipped on the ice, {v}.","So close. Brrr, that's cold.","Waddle all the way back, {v}.","Home was right there. Iced."],
+    fresh:["Just out? Back on the iceberg.","Didn't even get your feet wet, {v}.","Shortest waddle ever, {v}.","Out and frozen."],
+    streak:["Another one. I'm on thin ice. You're under it.","Ice streak! Who's next?","Cool. Cool. Very cool.","Sliding through all of you."],
+    rival:["You again, {v}? Chill out.","Our cold war continues, {v}.","Always freezing you, {v}.","Rival on ice. Again."],
+    captured:["Brrr, rude!","Cold move! Colder revenge.","I'll slide right back.","That was ice-cold. I'll be back.","Frosty. Very frosty.","You'll pay in snowballs."],
+    lead:["Slid into first. Chill, {v}.","Overtaken on the ice, {v}.","Leading. Stay cool.","Waddle aside, {v}."],
+    bigLead:["So far ahead I'm on another iceberg.","Too cool to catch.","Chilling in first. Forever.","Anyone else racing? Brr."],
+    underdog:["Last, but cool about it.","Slow waddle, fast finish.","Comeback on ice.","Don't count this penguin out."],
+    behind:["Right behind you, {v}. Feel the chill?","Sliding up on you, {v}.","Brrr… coming for you, {v}.","Ice cold and right there, {v}."],
+    escape:["Safe on the ice. Nice try, {v}.","Slid away. Too cool.","Missed me, {v}. Chill.","Can't catch a sliding penguin."],
+    final:["One piece each. Ice cold finish.","Final slide decides it.","Last waddle. Stay frosty."],
+    dry:["Still no six, {v}? Frozen solid.","Your fort's an igloo now, {v}.","Waiting for a six, {v}? Ice age.","The dice gave you the cold shoulder, {v}."],
+    gg:["Good game. Stay chill, {v}.","Rematch. My flippers slipped.","Cool win. For now, {v}.","Lucky. Icy lucky."],
+    out:["Waddle waddle, go!","Off the ice!","Sliding in!","Cool entrance."],
+    six:["Cool six!","Six! Ice ice baby.","Six. Chill.","Six on ice!"],
+    home:["Chillin' at home.","Slid in safe!","One home. Cool.","Back in the igloo."],
+    win:["Coolest one here!","Ice cold victory!","All home. Chill.","Frozen champion!","Cool. Very cool."],
+    nomove:["Waddling in place.","Brr… nothing.","Chilling.","Just standing on ice."]},
+  classic:{
+    capture:["Gotcha!","Back you go, {v}!","Sorry, not sorry!","Off the board, {v}!","Bye bye, {v}!","Too slow!"],
+    revenge:["Payback, {v}!","Remember me, {v}? Return to sender!","What goes around…","That's for earlier, {v}!"],
+    close:["Nearly home? Not today, {v}!","So close! Back to the start!","All that way for nothing, {v}!","Unlucky, {v}! Start again!"],
+    fresh:["Just got out? Get back in!","One step and gone, {v}!","Speedrun to the yard, {v}!","Welcome! Bye!"],
+    streak:["Another one!","I'm on a roll!","Who's next?","Can't stop me!"],
+    rival:["You again, {v}?","Same result, {v}!","I've got your number, {v}!","Rivals? More like regulars."],
+    captured:["Hey! Not fair!","You'll pay for that!","I'll be back!","Oh, it's on now!","Watch your back!","Big mistake!"],
+    lead:["In front! See ya, {v}!","Passed you, {v}!","Leading the pack!","Move over, {v}!"],
+    bigLead:["Anyone want to catch up?","Way out in front!","Too far ahead!","This is too easy!"],
+    underdog:["Not out yet!","Comeback time!","Last now, first later!","Just getting started!"],
+    behind:["Right behind you, {v}!","Coming for you, {v}!","Watch out, {v}!","Run, {v}!"],
+    escape:["Safe! Nice try, {v}!","Missed me!","Can't touch this!","Too quick, {v}!"],
+    final:["Last piece each! Here we go!","Winner takes all!","Final stretch!"],
+    dry:["Still no six, {v}?","Stuck in the fort, {v}?","Need a six, {v}? Unlucky!","The dice hate you, {v}!"],
+    gg:["Good game! Rematch!","Lucky win, {v}!","Next time, {v}!","Rematch. Now."],
+    out:["Here I come!","Let's go!","I'm out!","Look out!"],
+    six:["Six!","Roll on!","Big six!","Six! Let's go!"],
+    home:["One home!","Safe and sound!","Made it!","Home free!"],
+    win:["Winner!","Champion!","All home! I win!","Undefeated!","That's game!"],
+    nomove:["Nothing to do…","Next time.","No moves. Fine.","Pass."]},
 };
-const MASCOT_POSE={capture:"taunt", captured:"upset", out:"thumbs", six:"cheer", home:"cheer", win:"dance", nomove:"shrug"};
-const MASCOT_PRI={win:9, capture:7, captured:6, home:5, out:4, six:3, nomove:2};
-const MASCOT_HOLD={win:3200, capture:2300, captured:1700};
+const CAPTURE_KINDS=["capture","revenge","close","fresh","streak","rival"];
+const MASCOT_POSE={captured:"upset", out:"thumbs", six:"cheer", home:"cheer", win:"dance", nomove:"shrug",
+  lead:"taunt", bigLead:"taunt", behind:"taunt", dry:"taunt", escape:"thumbs", underdog:"thumbs", final:"cheer", gg:"shrug"};
+CAPTURE_KINDS.forEach(k=>MASCOT_POSE[k]="taunt");
+const MASCOT_PRI={win:9, gg:8, captured:6, home:5, lead:5, final:5, escape:4, out:4, bigLead:4, behind:3, dry:3, six:3, underdog:2, nomove:2};
+CAPTURE_KINDS.forEach(k=>MASCOT_PRI[k]=7);
+const MASCOT_HOLD={win:3200, gg:2400, captured:2000};
+const MASCOT_MOOD={captured:"upset", nomove:"meh", gg:"meh", underdog:"meh"};
 // A cartoon pawn stands in as the Classic set's mascot.
 function pawnMascot(i,st){ const [m,l,d]=PAL[i];
   return `${SH}<g class="body"><path d="M14 55c0-8 6-12 11-13l3-15h4l3 15c5 1 11 5 11 13z" fill="${m}" stroke="${d}"/><rect x="18" y="24" width="24" height="6" rx="3" fill="${m}" stroke="${d}"/>
@@ -2054,7 +2211,7 @@ function mascotArms(pose,i){
   }
   return "";
 }
-const MASCOT={queue:[], busy:false, seen:{}};
+const MASCOT={queue:[], busy:false, seen:{}, lastEnd:0};
 const mascotsOn=()=> lsGet("ludo.mascots")!==false && !reduceMotion;
 const seeded=n=>{ const x=Math.sin(n*12.9898+78.233)*43758.5453; return x-Math.floor(x); };
 // Queue a mascot moment. key keeps one moment per event even when several pieces are involved.
@@ -2064,6 +2221,8 @@ function mascotEvent(type,seat,info={}){
   if (MASCOT.seen[key]) return; MASCOT.seen[key]=1;
   const pr=MASCOT_PRI[type]||1;
   if (MASCOT.queue.length>=2 && pr<6) return;
+  // Small moments only when the stage is free and nobody spoke a moment ago, so mascots don't pop up every turn.
+  if (pr<5 && (MASCOT.busy || MASCOT.queue.length || Date.now()-MASCOT.lastEnd<2500)) return;
   MASCOT.queue.push({type,seat,info,pr,roll:G.state.rollId||0}); MASCOT.queue.sort((a,b)=>b.pr-a.pr);
   runMascots();
 }
@@ -2081,32 +2240,49 @@ async function diceStill(){
     await sleep(350); if (!diceMoving()) return;
   }
 }
+// Pick a line this mascot hasn't said yet this game (the same pick on every screen online).
+function pickLine(ch,type,seed){
+  const set=(LINES[ch]||LINES.classic)[type]||LINES.classic[type], k=ch+":"+type;
+  G.usedLines=G.usedLines||{}; const used=G.usedLines[k]=G.usedLines[k]||[];
+  let free=set.map((_,i)=>i).filter(i=>!used.includes(i)); if (!free.length){ used.length=0; free=set.map((_,i)=>i); }
+  const i=free[Math.floor(seeded(seed)*free.length)]; used.push(i); return set[i];
+}
 async function showMascot({type,seat,info,roll}){
   await sleep(info.delay||0); await diceStill();
   const s=G.state; if (!s || $("#game").hidden) return;
-  const ch=charOf(s,seat), lines=(LINES[ch]||LINES.classic)[type]||LINES.classic[type];
+  if (info.skipIfCap!=null && G.capRoll===info.skipIfCap) return;   // a capture on this move says it better
+  // After a capture the victim's mascot leans in from its own corner and answers back.
+  if (info.reply!=null) G.duet=true;                  // bots hold their next roll while the two mascots trade lines
+  const reply = info.reply!=null ? sleep(1150).then(diceStill).then(()=>playMascot("captured",info.reply,{victim:seat},roll)) : null;
+  try { await playMascot(type,seat,info,roll); if (reply) await reply; } finally { if (info.reply!=null){ G.duet=false; maybeBot(); } }
+}
+async function playMascot(type,seat,info,roll){
+  const s=G.state; if (!s || $("#game").hidden) return;
+  const ch=charOf(s,seat);
   let victim = info.victim!=null ? seatName(info.victim) : ""; if (victim==="You") victim="you";
-  const line=lines[Math.floor(seeded(roll*31+seat*7+(MASCOT_PRI[type]||0))*lines.length)].replace("{v}",victim);
+  const line=pickLine(ch,type,roll*31+seat*7+(MASCOT_PRI[type]||0)).replaceAll("{v}",victim);
+  const who=seatName(seat), pet= ch==="classic" ? "pawn" : CHAR_NAMES[ch].toLowerCase();
+  const tag= who==="You" ? "Your "+pet : who+"'s "+pet;
   const pose=MASCOT_POSE[type]||"thumbs", right= seat===1 || seat===2;
   const body = ch==="classic" ? pawnMascot(seat, type==="captured"?"scared":"idle") : (CH[ch])(seat, type==="captured"?"scared":"idle");
   const el=document.createElement("div");
-  el.className=`mascot ${right?"right":"left"} c-${COLORS[seat]} ch-${ch} pose-${pose} mood-${type==="captured"?"upset":type==="nomove"?"meh":"happy"}`;
+  el.className=`mascot ${right?"right":"left"} c-${COLORS[seat]} ch-${ch} pose-${pose} mood-${MASCOT_MOOD[type]||"happy"}`;
   el.style.top = (seat<2 ? 22 : 62)+"%";
   el.setAttribute("role","status");
-  el.innerHTML=`<div class="m-fig"><svg viewBox="-14 -14 92 82" aria-hidden="true"><g class="m-all">${body}${mascotArms(pose,seat)}</g></svg></div><div class="m-bubble"></div>`;
-  el.querySelector(".m-bubble").textContent=line;
+  el.innerHTML=`<div class="m-fig"><svg viewBox="-14 -14 92 82" aria-hidden="true"><g class="m-all">${body}${mascotArms(pose,seat)}</g></svg></div><div class="m-bubble"><small class="m-who"></small><span class="m-line"></span></div>`;
+  el.querySelector(".m-who").textContent=tag; el.querySelector(".m-line").textContent=line;
   $("#mascots").appendChild(el);
-  const side=right?1:-1, hold=MASCOT_HOLD[type]||1800;
+  const side=right?1:-1, hold=Math.max(MASCOT_HOLD[type]||(CAPTURE_KINDS.includes(type)?2300:1800), 900+line.length*42);
   const enterA=el.animate([{transform:`translateX(${side*110}%) rotate(${side*-28}deg)`},{transform:`translateX(${side*14}%) rotate(${side*-6}deg)`,offset:.75},{transform:`translateX(${side*20}%) rotate(${side*-9}deg)`}],{duration:520,easing:"cubic-bezier(.3,1.4,.5,1)",fill:"forwards"});
   tap(right?520:480,.07); setTimeout(()=>tap(700,.05),120);
-  if (type==="capture") setTimeout(()=>{ tap(880,.05); setTimeout(()=>tap(990,.05),90); setTimeout(()=>tap(1100,.05),180); },500);
+  if (CAPTURE_KINDS.includes(type)) setTimeout(()=>{ tap(880,.05); setTimeout(()=>tap(990,.05),90); setTimeout(()=>tap(1100,.05),180); },500);
   await enterA.finished.catch(()=>{});
   el.classList.add("talking");
   await sleep(hold);
   el.classList.remove("talking");
   const exitA=el.animate([{transform:`translateX(${side*20}%) rotate(${side*-9}deg)`},{transform:`translateX(${side*115}%) rotate(${side*-30}deg)`}],{duration:380,easing:"cubic-bezier(.5,0,.8,.4)",fill:"forwards"});
   await exitA.finished.catch(()=>{});
-  el.remove();
+  el.remove(); MASCOT.lastEnd=Date.now();
 }
 
 /* ---------- Die ---------- */
@@ -2173,13 +2349,14 @@ function onToken(seat,t){
 
 /* ---------- Automation: bots + forced moves ---------- */
 function maybeBot(){
-  const s=G.state; if (!s || s.status!=="playing" || G.anim || G.spinning) return;
+  const s=G.state; if (!s || s.status!=="playing" || G.anim || G.spinning || G.duet) return;
   if (s.seats[s.turn].kind!=="bot") return;
   if (G.mode==="online" && (s.host!==G.me || G.canWrite===false)) return;
   if (botRev===s.rev) return; botRev=s.rev;
   clearTimeout(botTimer);
   botTimer=setTimeout(()=>{
     if (!G.state || G.state.rev!==s.rev) return;
+    if (G.duet){ botRev=null; return; }                 // picked up again when the mascots finish
     if (!s.rolled) rollAction(true); else commit(doMove(s, botPick(s)));
   }, s.rolled ? 600 : 750);
 }
@@ -2301,10 +2478,49 @@ function handleDone(s){
   }
   return Date.now()-G.doneAt >= 1500;
 }
+// Standings-based mascot moments, checked once after every move.
+function leaderOf(s){
+  const r=activeSeats(s).filter(i=>!s.winners.includes(i)).map(i=>[i,progressOf(s,i)]).sort((a,b)=>b[1]-a[1]);
+  if (!r.length) return null; if (r.length>1 && r[0][1]===r[1][1]) return G.leader??null; return r[0][0];
+}
+function coolOK(name,seat,gap){ const r=G.state.rollId||0, k=name+seat; G.cool=G.cool||{}; if (G.cool[k]!=null && r-G.cool[k]<gap) return false; G.cool[k]=r; return true; }
+function mascotAfterMove(s){
+  const lm=s.lastMove; if (!lm || s.status!=="playing") return;
+  const key=(s.rollId||0)+":"+lm.seat+":"+lm.t+":"+lm.to; if (G.moveKey===key) return;
+  const fresh=G.moveKey==null; G.moveKey=key;
+  const L=leaderOf(s), P=G.leader; G.leader=L;
+  if (fresh) return;                                   // just opened or rejoined: don't react to an old move
+  const seat=lm.seat, r=s.rollId||0, live=activeSeats(s), opps=live.filter(i=>i!==seat);
+  const base={delay: lm.from>=0 ? moveDuration(charOf(s,seat), lm.to-lm.from)+250 : 900, skipIfCap:r};
+  if (L!=null && P!=null && L!==P && progressOf(s,L)>=.12 && r-(G.leadRoll??-99)>=8){ G.leadRoll=r; return mascotEvent("lead",L,{...base,victim:P}); }
+  const lastOnes=live.filter(i=>!s.winners.includes(i) && s.tokens[i].filter(p=>p<56).length===1);
+  if (lastOnes.length>=2 && !G.finalSaid){ G.finalSaid=true; return mascotEvent("final",seat,{...base,key:"final"}); }
+  const cells=i=>s.tokens[i].filter(p=>p>=0&&p<=50).map(p=>absCell(i,p));
+  if (lm.from>=0 && lm.from<=50){                      // was being chased, now safe
+    const cf=absCell(seat,lm.from), hunter=opps.find(i=>cells(i).some(d=>{ const g=(cf-d+52)%52; return g>=1&&g<=6; }));
+    const safeNow= lm.to>50 || SAFE.has(absCell(seat,lm.to));
+    if (hunter!=null && safeNow && !SAFE.has(cf) && seeded(r*13+seat)<.6) return mascotEvent("escape",seat,{...base,victim:hunter});
+  }
+  if (lm.to>=0 && lm.to<=50){                          // landed just behind someone
+    const c=absCell(seat,lm.to), prey=opps.find(i=>cells(i).some(d=>{ const g=(d-c+52)%52; return g>=1&&g<=6 && !SAFE.has(d); }));
+    if (prey!=null && seeded(r*17+seat)<.4 && coolOK("behind",seat,6)) return mascotEvent("behind",seat,{...base,victim:prey});
+  }
+  const ranked=live.filter(i=>!s.winners.includes(i)).map(i=>[i,progressOf(s,i)]).sort((a,b)=>b[1]-a[1]);
+  if (ranked.length>=2){
+    const top=ranked[0], second=ranked[1], last=ranked[ranked.length-1];
+    if (top[0]===seat && top[1]-second[1]>=.2 && seeded(r*19+seat)<.35 && coolOK("big",seat,12)) return mascotEvent("bigLead",seat,{...base,victim:second[0]});
+    if (last[0]===seat && top[1]-last[1]>=.25 && seeded(r*23+seat)<.3 && coolOK("under",seat,15)) return mascotEvent("underdog",seat,base);
+  }
+}
 // Rebuild a part of the screen only when what it shows has changed.
 function same(key,val){ const v=JSON.stringify(val); G._sig=G._sig||{}; if (G._sig[key]===v) return true; G._sig[key]=v; return false; }
 function renderGame(){
-  { const e=G.state && G.state.log && G.state.log[0]; if (e && e.k==="nomove" && G.lastNomove!==G.state.rollId){ G.lastNomove=G.state.rollId; if (seeded(G.state.rollId*11+e.c)<.25) mascotEvent("nomove",e.c,{delay:150}); } }
+  if (G.state && mascotsOn()) mascotAfterMove(G.state);
+  { const e=G.state && G.state.log && G.state.log[0]; if (e && e.k==="nomove" && G.lastNomove!==G.state.rollId){ G.lastNomove=G.state.rollId; const st=G.state, c=e.c, others=activeSeats(st).filter(i=>i!==c);
+      if (st.tokens[c].every(p=>p<0) && (st.dry||[])[c]>=3 && others.length && seeded(st.rollId*29+c)<.5 && coolOK("dry",c,8)){
+        const L=leaderOf(st), teaser= L!=null && L!==c ? L : others[Math.floor(seeded(st.rollId*31)*others.length)];
+        mascotEvent("dry",teaser,{delay:150,victim:c}); }
+      else if (seeded(st.rollId*11+c)<.25) mascotEvent("nomove",c,{delay:150}); } }
   const s=G.state;
   if (G.lastRollId===null) G.lastRollId=s.rollId||0;
   else if (s.rollId && s.rollId!==G.lastRollId && s.dice){ G.lastRollId=s.rollId; playRoll(s.dice, s.diceBy); }
@@ -2414,6 +2630,7 @@ function renderGame(){
   maybeBot(); maybeAuto();
 }
 function resetShown(){
+  G.caps=[]; G.usedLines={}; G.leader=null; G.moveKey=null; G.cool={}; G.capRoll=null; G.capSaid=null; G.finalSaid=false; G.leadRoll=null; G.duet=false;
   G.lastHuman=null; G.passPending=false; G.spinning=false; const sp=document.getElementById("spin"); if (sp) sp.hidden=true;
   if (typeof MASCOT!=="undefined"){ MASCOT.queue.length=0; MASCOT.seen={}; const ml=document.getElementById("mascots"); if (ml) ml.innerHTML=""; }
   G._sig={};
