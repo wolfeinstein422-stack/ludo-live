@@ -103,6 +103,15 @@ const check = (ok, name, extra = "") => { console.log((ok ? "ok   " : "FAIL ") +
     check((await p.textContent("#log")).includes("captured"), "captures work");
     await ctx.close(); }
 
+  // 3b. Tapping a piece to move it must not also roll the die for the next player
+  { const st = { status: "playing", host: null, rev: 5, rollId: 3, turn: 0, rolled: true, dice: 3, diceBy: 0, sixes: 0, winners: [], lastMove: null, dry: [0,0,0,0], log: [{ k: "start" }],
+      seats: [{ kind: "human", uid: null, char: "frog", name: "Asha" }, { kind: "human", uid: null, char: "owl", name: "Ben" }, { kind: "off", uid: null, char: "penguin" }, { kind: "off", uid: null, char: "robot" }],
+      tokens: [[5,12,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1],[-1,-1,-1,-1]] };
+    const ctx = await newCtx(), p = await open(ctx, { fn: s => { window.claude = { hot: { data: { localState: s } } }; }, arg: st });
+    await p.waitForTimeout(600); await p.locator("#tokens .token.can").first().click({ force: true }); await p.waitForTimeout(2500);
+    check(!/Ben (rolled|brought|has no)/.test(await p.textContent("#log")) && (await p.textContent("#turnPanel")).includes("Ben's turn"), "tapping a piece moves it without rolling for the next player");
+    await ctx.close(); }
+
   // 4. Two players online
   { const ctx = await newCtx(), host = await open(ctx), guest = await open(ctx);
     await host.click("#modeOnline"); await guest.click("#modeOnline");

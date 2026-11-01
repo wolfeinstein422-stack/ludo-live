@@ -1480,7 +1480,7 @@ function initGameBoard(){
     const b=document.createElement("button"); b.type="button"; b.className=`token c-${COLORS[s]}`;
     b.setAttribute("aria-label",`${NAMES[s]} token ${t+1}`); b.disabled=true;
     b.style.setProperty("--dl", (-((s*4+t)*0.61)%2.4).toFixed(2)+"s");
-    b.addEventListener("click",()=>{ audio(); onToken(s,t); });
+    b.addEventListener("click",e=>{ e.stopPropagation(); G.tapAt=Date.now(); audio(); onToken(s,t); });   // the tap ends here: it must not also reach the board and roll for the next player
     layer.appendChild(b); tokenEls.push(b);
   }
 }
@@ -2842,7 +2842,7 @@ function setOnlineAvailability(){
 
 $("#homeBtn").onclick=goHome;
 if (lsGet("ludo.reduceFx")===true) document.body.classList.add("reduce-fx");
-$("#mat").addEventListener("click",e=>{ if (e.target.closest(".token.can, .over")) return; const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; audio(); rollAction(false); });
+$("#mat").addEventListener("click",e=>{ if (e.target.closest(".token.can, .over")) return; if (Date.now()-(G.tapAt||0)<450) return; const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; audio(); rollAction(false); });
 addEventListener("keydown",e=>{ if ((e.code!=="Space" && e.key!==" ") || $("#game").hidden || e.target.closest("input,select,textarea,button")) return;
   const s=G.state; if (!s || s.rolled || G.anim || !myTurn()) return; e.preventDefault(); audio(); rollAction(false); });
 $("#resumeBtn").onclick=resumeLocal;
